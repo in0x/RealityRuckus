@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src\AnimatedSprite.cpp" />
+    <ClCompile Include="src\Animation.cpp" />
+    <ClCompile Include="src\aStarSearch.cpp" />
+    <ClCompile Include="src\CombatState.cpp" />
+    <ClCompile Include="src\EncryptedInputStream.cpp" />
+    <ClCompile Include="src\Event.cpp" />
+    <ClCompile Include="src\Game.cpp" />
+    <ClCompile Include="src\Graph.cpp" />
+    <ClCompile Include="src\GuiManager.cpp" />
+    <ClCompile Include="src\lvlManager.cpp" />
+    <ClCompile Include="src\OrthogonalLineOfSight.cpp" />
+    <ClCompile Include="src\player.cpp" />
+    <ClCompile Include="src\Quelle.cpp" />
+    <ClCompile Include="src\SoundManager.cpp" />
+    <ClCompile Include="src\textureManager.cpp" />
+    <ClCompile Include="src\tile.cpp" />
+    <ClCompile Include="src\UIManager.cpp" />
+    <ClCompile Include="src\Unit.cpp" />
+    <ClCompile Include="src\UnitManager.cpp" />
+    <ClCompile Include="src\WeightedGraph.cpp" />
+    <ClCompile Include="src\ActionEvent.cpp" />
+    <ClCompile Include="src\ActionManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\ActionEvent.h" />
+    <ClInclude Include="include\AnimatedSprite.hpp" />
+    <ClInclude Include="include\Animation.hpp" />
+    <ClInclude Include="include\aStarSearch.h" />
+    <ClInclude Include="include\block.h" />
+    <ClInclude Include="include\CombatEvent.h" />
+    <ClInclude Include="include\CombatState.h" />
+    <ClInclude Include="include\dirent.h" />
+    <ClInclude Include="include\drawableUnit.h" />
+    <ClInclude Include="include\Event.h" />
+    <ClInclude Include="include\game.h" />
+    <ClInclude Include="include\GameState.h" />
+    <ClInclude Include="include\Graph.h" />
+    <ClInclude Include="include\GuiManager.h" />
+    <ClInclude Include="include\lvlManager.h" />
+    <ClInclude Include="include\MyPriorityQueue.h" />
+    <ClInclude Include="include\Node.h" />
+    <ClInclude Include="include\OrthogonalLineOfSight.h" />
+    <ClInclude Include="include\player.h" />
+    <ClInclude Include="include\QueueElCompare.h" />
+    <ClInclude Include="include\soundmanager.h" />
+    <ClInclude Include="include\textureManager.h" />
+    <ClInclude Include="include\tile.h" />
+    <ClInclude Include="include\UIManager.h" />
+    <ClInclude Include="include\Unit.h" />
+    <ClInclude Include="include\UnitManager.h" />
+    <ClInclude Include="include\unitType.h" />
+    <ClInclude Include="include\WeightedGraph.h" />
+    <ClInclude Include="include\EncryptedInputStream.h" />
+    <ClInclude Include="include\ActionManagerInput.h" />
+    <ClInclude Include="include\ActionManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\run.sh" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+</Project>

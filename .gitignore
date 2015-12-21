@@ -1,0 +1,13 @@
+Debug/
+Release/
+x64/
+RealityRuckus.sdf
+RealityRuckus.opensdf
+.suo
+ *.dll
+makefile
+ app
+src/app
+src/Sprites 
+src/Sounds
+.vs/
