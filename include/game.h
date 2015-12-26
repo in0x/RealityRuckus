@@ -18,33 +18,45 @@ class Game {
 public:
 	Game();
 	~Game();
+
 	void init();
 	void update();
 	void end();
 	void getGUIevent(int playerIndex, int abilityIndex);
+
 	sf::Font* gameFont = nullptr;
+	
 private: 
 	enum class InputState {normal, WaitingForActionInput};
+
+	const int WINDOW_WIDTH = 1920;
+	const int WINDOW_HEIGHT = 1080;
+
 	sf::RenderWindow window;
+	sf::Clock frameClock;
+	sf::Sprite terrain;
+	sf::Texture cursorRegular;
+	sf::Texture cursorAttack;
+	sf::Sprite cursor;
+
 	lvlManager* pLvlMng = nullptr;
 	UnitManager* pUnitMng = nullptr;
 	SoundManager* pSoundMng = nullptr;
 	TextureManager* pTexMng = nullptr;
 	UIManager* pUiMng = nullptr;
 	ActionManager* pActionMng = nullptr;
-	sf::Clock frameClock;
-	Player* p;
-	sf::Sprite terrain;
-	GameState state;
 	OrthogonalLineOfSight* pLoS = nullptr;
 	GUImanager* pGuiMng = nullptr;
-	std::vector<Unit*>& playerVector = std::vector<Unit*>();
-	InputState inputState = InputState::normal;
-	const int WINDOW_WIDTH = 1920;
-	const int WINDOW_HEIGHT = 1080;
+	CombatState* currentCombat = nullptr;
 	ActionManagerInput* userActionInput = nullptr;
-	sf::Texture cursorRegular;
-	sf::Texture cursorAttack;
-	sf::Sprite cursor;
-	void updateActionManager(ActionManagerInput inputEvent);
+
+	Player* p;
+	
+	GameState state;
+	InputState inputState = InputState::normal;
+
+	std::vector<Unit*>& playerVector = std::vector<Unit*>();
+	
+	bool updateActionManager(ActionManagerInput inputEvent);
+	
 };

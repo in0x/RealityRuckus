@@ -28,6 +28,7 @@ public:
 	void runCombat(CombatState*, CombatEvent);
 	void testCombatState();
 	void setPlayer(Player* p);
+	void removeAP(Unit* unit, int ap);
 private:
 	lvlManager* lvl = nullptr;
 	TextureManager* tex = nullptr;

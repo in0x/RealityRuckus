@@ -9,8 +9,10 @@ class ActionEvent {
 public:
 	std::string name;
 	std::string description;
+	int range;
+	int cost;
 	ActionManager* actionmanager;
-	ActionEvent(std::string name, std::string description, ActionManager* actionmanager);
+	ActionEvent(std::string name, std::string description, ActionManager* actionmanager, int cost, int range);
 	virtual std::vector<CombatEvent> doAction(Unit* sender, int x, int y);
 };
 	
@@ -22,6 +24,6 @@ public:
 
 class AttackActionEvent : public ActionEvent {
 public:
-	AttackActionEvent(std::string name, std::string description, ActionManager* actionmanager);
+	AttackActionEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost);
 	virtual std::vector<CombatEvent> doAction(Unit* sender, int x, int y);
 };

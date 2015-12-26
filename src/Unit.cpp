@@ -27,15 +27,16 @@ Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng,int xPos, int 
 			break;
 		case robotdude:
 			sp.setTexture(texMng->textureTable.at("robotdude"));
+			name = "Attack Droid";
 			break;
 		case robotfly:
 			sp.setTexture(texMng->textureTable.at("robotfly"));
+			name = "Robot Fly";
 			break;
-		/*case robot:
-			sp.setTexture(texMng->textureTable.at("robot"));
-			break;*/
 		case player:
 			sp.setTexture(texMng->textureTable.at("coolarmy"));
+			name = "Player";
+			break;
 	}
 
 	if (s.getTexture() == NULL)
@@ -62,25 +63,24 @@ Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng, int xPos, int
 		case standard:
 			sp.setTexture(texMng->textureTable.at("EnemyChar"));
 			break;
-
 		case doge:
 			sp.setTexture(texMng->textureTable.at("shibe"));
 			break;
-
 		case turtle:
 			sp.setTexture(texMng->textureTable.at("turtle"));
 			break;
 		case robotdude:
 			sp.setTexture(texMng->textureTable.at("robotdude"));
+			name = "Attack Droid";
 			break;
 		case robotfly:
 			sp.setTexture(texMng->textureTable.at("robotfly"));
+			name = "Robot Fly";
 			break;
-		/*case robot:
-			sp.setTexture(texMng->textureTable.at("robot"));
-			break;*/
 		case player:
 			sp.setTexture(texMng->textureTable.at("coolarmy"));
+			name = "Player";
+			break;
 	}
 
 	if (s.getTexture() == NULL)
@@ -107,3 +107,33 @@ Unit::~Unit()
 {
 }
 
+
+void Unit::loseAP(int amount) {
+	currAP -= amount;
+
+	if (currAP < 0)
+		currAP = 0;
+}
+
+void Unit::loseHP(int amount) {
+	currHP -= amount;
+
+	if (currHP < 0)
+		currHP = 0;
+}
+
+void Unit::gainAP(int amount) {
+	currAP += amount;
+
+	if (currAP > maxAP) {
+		currAP = maxAP;
+	}
+}
+
+void Unit::gainHP(int amount) {
+	currHP += amount;
+
+	if (currHP > maxHP) {
+		currHP = maxHP;
+	}
+}

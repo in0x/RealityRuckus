@@ -24,5 +24,11 @@ public:
 	Unit();
 	~Unit();
 	std::vector<ActionEvent*> learnedActions;
+	std::string name = "";
+
+	void loseAP(int amount);
+	void loseHP(int amount);
+	void gainAP(int amount);
+	void gainHP(int amount);
 };
 

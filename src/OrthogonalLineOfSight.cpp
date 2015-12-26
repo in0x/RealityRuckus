@@ -52,11 +52,11 @@ std::vector<Tile> OrthogonalLineOfSight::findLoS(int startX, int startY, int end
 
 //checks LineOfSight for inaccessible Tiles
 bool OrthogonalLineOfSight::checkVisibility(std::vector<Tile> lineOfSight) {
-	if (lineOfSight.size() > 8) //If line to enemy is longer than 8 tiles
+	if (lineOfSight.size() > 9) //If line to enemy is longer than 8 tiles
 		return false;
 	if (lineOfSight.size() == 0)
 		return true;
-	for (int i = 0; i < lineOfSight.size() - 1; i++) {	//Do not check playerTile and enemyTile for accessibility: check Tile 1 until size-1
+	for (int i = 0; i < lineOfSight.size(); i++) {	//Do not check playerTile and enemyTile for accessibility: check Tile 1 until size-1
 		if (lineOfSight[i].accessible == false)
 			return false;
 	}

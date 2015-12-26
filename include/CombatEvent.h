@@ -4,6 +4,7 @@
 class Unit;
 
 enum CombatEventType {
+	NotValid = -1,
 	None = 0,
 	Move = 1,
 	AP = 2,
@@ -14,7 +15,8 @@ class CombatEvent {
 public:
 	Unit* affected;
 	CombatEventType type;
-	CombatEvent(Unit* sender) : affected(sender) { type = None; }
+	//CombatEvent(Unit* sender) : affected(sender) { type = None; }
+	CombatEvent(Unit* sender, CombatEventType type) : affected(sender), type(type) { }
 	void setMove(int oldX, int oldY, int newX, int newY) {
 		this->oldX = oldX;
 		this->oldY = oldY;

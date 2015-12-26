@@ -78,8 +78,6 @@ int UnitManager::moveUnit(int x, int y, Unit* unit) {
 
 	std::vector<Node> path = pathFinder.findPath(Node{unit->x, unit->y}, Node{ x, y }, lvl->createGraph());
 
-	std::cout << path.size() << std::endl;
-	
 	Node end = path.back();
 	std::cout << end.x << "  " << end.y << std::endl;
 	
@@ -96,24 +94,25 @@ int UnitManager::moveUnit(int x, int y, Unit* unit) {
 void UnitManager::damageUnit(Unit* unit, int hp)
 {
 	//lvl->setAccessTile(unitList[index]->x, unitList[index]->y, true);
-	unit->currHP -= hp;
-	if (unit->currHP <= 0)
+	unit->loseHP(hp);
+	if (unit->currHP == 0)
 	{
 		removeUnit(unit);
 	}
 }
 
+void UnitManager::removeAP(Unit* unit, int ap) {
+	unit->loseAP(ap);
+}
+
 //Mock Combat: when entering Combat, update() sends an attack at the position at which you shift right click.  
 void UnitManager::attackUnit(int unitX, int unitY, Unit* attackerUnit, Unit* unitToAttack) {
-	std::cout << "Attacking x: " << unitX << " y: " << unitY << std::endl;
 	if (!lvl->isOccupied(unitX, unitY))
 		return;
 
 	int attackValue = (rand() % 10) + 1;
 
 	unitToAttack->currHP -= attackValue;
-	std::cout << "Attack. Damage: " << attackValue << " Enemy at " << unitToAttack->currHP << " hp" << std::endl;
-	std::cout << unitToAttack->currHP << std::endl;
 
 	if (unitToAttack->currHP <= 0)
 		removeUnit(unitToAttack);

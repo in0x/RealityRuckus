@@ -29,7 +29,6 @@ void lvlManager::moveUnitInMap(int newX, int newY, Unit* unit) {
 void lvlManager::setAccessTile(int x, int y, bool accessability) {
 	bool prev = map[x][y].accessible;
 	map[x][y].accessible = accessability;
-	std::cout << "Set Tile { "<< x << " , " << y << " }from " << prev << " to " << accessability << std::endl;
 }
 
 void lvlManager::setOccupied(int x, int y, bool occupied) {
@@ -47,7 +46,6 @@ std::string lvlManager::buildKey(TextureManager* texMng){
 	key = texMng->floors[pick];
 	int dotPos = key.find_last_of('.');
 	key.erase(dotPos, key.length() - dotPos);
-	//std::cout << key << std::endl;
 	return key;
 }
 
@@ -79,15 +77,6 @@ void lvlManager::genMap(TextureManager* texMng, UnitManager* unitMng) {
 		if (v.x != -1)
 			genTiles(b, v.x, v.y, unitMng);
 	}
-	/*for (auto x : map) {
-		for (auto y : x) {
-			if (y.accessible)
-				std::cout << " O ";
-			else
-				std::cout << " X ";
-		}
-		std::cout << std::endl;
-	}*/
 }
 
 void lvlManager::genDrawable(sf::Sprite* output){
@@ -171,10 +160,7 @@ Block lvlManager::generateTiles(std::string name, TextureManager* texMng) {
 	y = std::stoi(name.substr(first_ + 3, 1)); // larger than 9
 	
 	sf::Vector2u blockSize = block.getSize();
-	//std::cout << block.getSize().x << " , " << block.getSize().y << std::endl; //128 x 128
-
-
-	//for (int x = 0; x < blockSize.x; x += 128)
+	
 	for (int x = blockSize.x; x > 0; x -= 128) {
 		for (int y = blockSize.y; y > 0; y -= 128) {
 			Tile t;
@@ -190,7 +176,6 @@ Block lvlManager::generateTiles(std::string name, TextureManager* texMng) {
 		}
 	}
 
-	//std::cout << name.substr(first_ + 1, 1) << std::endl; //rtfm you retard
 
 	Block b = {tiles, x, y};
 	return  b;
@@ -234,7 +219,7 @@ sf::Vector2<int> lvlManager::findNextSpot(int w, int h){
 		for (int i = x - 1; i < x + w + 1; i++){
 			for (int j = y - 1; j < y + h + 1; j++){
 				if (!((i == x - 1 || i == x + w) && (j == y - 1 || j == y + h)))
-					//std::cout << "hoho-haha" << std::endl; // top kek
+
 				if ((i < x || i >= x + w || j < y || j >= y + h)){
 					if (map[i][j].accessible == true){
 						outAccessible++;
