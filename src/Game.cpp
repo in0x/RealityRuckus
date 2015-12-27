@@ -81,7 +81,7 @@ Game::~Game() {
 /* enum CombatEventType { None = 0, Move = 1, AP = 2, HP = 4 }; These are powers of 2 so we can later add them and transport multiple messagess at once */
 
 // Gets called in main when the player has chosen a target location after selecting an ability 
-bool Game::updateActionManager(ActionManagerInput inputEvent) {
+std::tuple<bool, std::string> Game::updateActionManager(ActionManagerInput inputEvent) {
 	
 	auto events = playerVector[inputEvent.playerIndex]->learnedActions[inputEvent.actionIndex]->doAction(playerVector[inputEvent.playerIndex], inputEvent.mouseX, inputEvent.mouseY);
 	
@@ -89,9 +89,12 @@ bool Game::updateActionManager(ActionManagerInput inputEvent) {
 
 	// TODO: return false if the player has made an invalid selection
 
+	if (events[0].type == CombatEventType::NotValid)
+		return std::tuple<bool, std::string>{false, events[0].message};
+
 	pGuiMng->handleCombatEvents(events, playerVector);
 
-	return true;
+	return std::tuple<bool, std::string>{true, ""};
 }
 
 // This function gets called by the GUImanager when the player has chosen an ability to execute
@@ -129,7 +132,7 @@ void Game::update() {
 					Unit* nextActor = currentCombat->getFirstUnit();
 					if (!isPlayer(playerVector, nextActor)) {
 						//AiController.makeMove();
-						std::cout << "NPC turn" << std::endl;
+						//std::cout << "NPC turn" << std::endl;
 						//break;
 					}
 				}
@@ -163,7 +166,7 @@ void Game::update() {
 							pGuiMng->updatePlayerPositionMap(oldX, oldY, p->x, p->y);
 							visibleUnits = pLoS->getVisibleUnits(pLvlMng, pUnitMng);
 						}
-						pGuiMng->displayMessage("Player moved", sf::Color{255,0,0,255});
+						//pGuiMng->displayMessage("Player moved", sf::Color{255,0,0,255});
 					}
 				}
 			}
@@ -175,14 +178,43 @@ void Game::update() {
 
 				if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Button::Left)
 				{
+					bool actionTookPlace = true;
+
 					int xPos = sf::Mouse::getPosition(window).x - pUiMng->getX();
 					int yPos = sf::Mouse::getPosition(window).y - pUiMng->getY();
 					//click pos are screen space coordinates
-					updateActionManager(ActionManagerInput(userActionInput->playerIndex, userActionInput->actionIndex, xPos, yPos));
+					
+					auto wasValidAction = updateActionManager(ActionManagerInput(userActionInput->playerIndex, userActionInput->actionIndex, xPos, yPos));
+					
+					// If this occurs the player either selected an Action that is not in range or costs more AP than he has
+					// In this case we continue wait for valid input
+					if (!std::get<0>(wasValidAction)) { 
+						pGuiMng->displayMessage(std::get<1>(wasValidAction), sf::Color{ 255,0,0,255 });
+						actionTookPlace = false;
+					}
+
 					delete userActionInput;
 					userActionInput = nullptr;
 					cursor.setTexture(cursorRegular);
 					inputState = InputState::normal;
+
+					//Update the GUI with player ap replenishments, without popups
+					if (actionTookPlace) {
+						auto gains = currentCombat->replenishUnitAP();
+						std::vector<CombatEvent> apEvents{};
+						for (auto gainEv : gains) {
+
+							CombatEvent e{ std::get<1>(gainEv), CombatEventType::AP };
+
+							// Since the ActionManager returns loses as positive values I implemented the GUI to asume updates as values
+							// So for displaying gains we need to currently send the negative value (gui adds --2 for example)
+							e.setAPChange(-std::get<0>(gainEv));
+
+							apEvents.push_back(e);
+						}
+
+						pGuiMng->handleCombatEvents(apEvents, playerVector, false);
+					}
 				}
 			}
 		}
@@ -244,7 +276,6 @@ void Game::update() {
 		pGuiMng->draw();
 		window.draw(cursor);
 		window.display();
-
 	}
 }
 

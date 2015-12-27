@@ -86,11 +86,11 @@ void GUImanager::displayUnitChangeText(CombatEvent& event) {
 	sf::Vector2f pos{ (float)event.affected->x * 128, (float)event.affected->y * 128 };
 	std::string text = "";
 
-	if (event.type == 2) {
+	if (event.type == CombatEventType::AP) {
 		text = "- " + std::to_string(event.APChange) + " AP";
 	}
 
-	else if (event.type == 4) {
+	else if (event.type == CombatEventType::HP) {
 		text = "- " + std::to_string(event.HPChange) + " HP";
 	}
 
@@ -109,7 +109,7 @@ void GUImanager::displayUnitChangeText(CombatEvent& event) {
 	}
 }
 
-void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vector<Unit*>& playerVector) {
+void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vector<Unit*>& playerVector, bool displayPopUps) {
 	auto findPlayer = [](auto vec, auto unit) {
 		for (int i = 0; i < vec.size(); i++) {
 			if (vec[i] == unit)
@@ -143,7 +143,7 @@ void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vecto
 			}
 		}
 
-		displayUnitChangeText(e);
+		if (displayPopUps) displayUnitChangeText(e);
 	}
 }
 

@@ -15,14 +15,20 @@ class UnitManager {
 public:
 	UnitManager(lvlManager*, TextureManager*, SoundManager*);
 	~UnitManager();
-	bool spawnUnit(UnitType, int, int, bool);
+
 	std::vector<DrawableUnit> getUnits();
 	std::vector<Unit*> unitList;
+
 	Player* player;
-	void isDead(int);
+	
 	sf::SoundBuffer dieBuffer;
 	sf::Sound die;
+
 	int moveUnit(int x, int y, Unit* unit);
+
+	bool spawnUnit(UnitType, int, int, bool);
+
+	void isDead(int);
 	void damageUnit(Unit * unit, int hp);
 	void attackUnit(int unitX, int unitY, Unit* attacker, Unit* unitToAttack);
 	void runCombat(CombatState*, CombatEvent);

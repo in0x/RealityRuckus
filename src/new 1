@@ -1,0 +1,11 @@
+More Details in commit log
+
+Implemented Range and Ap cost checking in ActionManager
+If the selected Action is invalid, it is not executed and the player is prompted for an action again
+Units now have  an interface for gaining and losing AP and HP (these include bounds checking)
+Restructured some header files
+Abilities now include Range and Cost Values, which should be set in the constructor
+The GUI now has the ability to output generic messages, you can select their text and color, they appear in the top left corner
+Units now gain back a certain amount of AP per round, defined by their AP gain value. This is set to 2 per defaulft but can be altered after construction
+The CombatState takes care of replenshing AP after an action happened for you
+Fixed a bug where the player would lose AP by attacking an empty field

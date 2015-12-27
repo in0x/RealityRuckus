@@ -39,7 +39,7 @@ Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng,int xPos, int 
 			break;
 	}
 
-	if (s.getTexture() == NULL)
+	if (s.getTexture() == nullptr)
 	 	sprite = sp;
 	
 	x = xPos;
@@ -83,7 +83,7 @@ Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng, int xPos, int
 			break;
 	}
 
-	if (s.getTexture() == NULL)
+	if (s.getTexture() == nullptr)
 	 	sprite = sp;
 	
 	x = xPos;
@@ -136,4 +136,13 @@ void Unit::gainHP(int amount) {
 	if (currHP > maxHP) {
 		currHP = maxHP;
 	}
+}
+
+void Unit::setAPGainPerRound(int ap) {
+	apGain = ap;
+}
+
+int Unit::replenishAP() {
+	gainAP(apGain);
+	return apGain;
 }

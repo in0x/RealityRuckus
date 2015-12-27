@@ -2,6 +2,11 @@
 #include "CombatEvent.h"
 #include "UnitManager.h"
 
+bool ActionManager::checkRange(int range, sf::Vector2i unit1pos, sf::Vector2i unitpos2) {
+	int xDistance = abs(unit1pos.x - unitpos2.x);
+	int yDistance = abs(unit1pos.y - unitpos2.y);
+	return (xDistance + yDistance) <= range;
+}
 
 std::vector<CombatEvent> ActionManager::moveUnit(Unit * unit, int x, int y)
 {
@@ -27,14 +32,36 @@ std::vector<CombatEvent> ActionManager::moveUnit(Unit * unit, int x, int y)
 	return events;
 }
 
-std::vector<CombatEvent> ActionManager::damageUnit(Unit * unit, int x, int y, int hp)
+//unit is the the Unit that wants to do something, x and y define where the affected Unit is
+std::vector<CombatEvent> ActionManager::damageUnit(Unit * unit, int x, int y, int hp, int range, int cost)
 {
 	std::vector<CombatEvent> events;
+
+	if (!checkRange(range, sf::Vector2i{ x / 128, y / 128 }, sf::Vector2i{ unit->x, unit->y })) {
+		int distance = abs(unit->x - x / 128) + abs(unit->y - y / 128);
+
+		events.push_back(CombatEvent{unit, CombatEventType::NotValid, 
+			"You need to move closer for this action\nDistance from target: " + std::to_string(distance) +  "\tSkill Range: " + std::to_string(range)
+		});
+
+		return events;
+	}
+
+	if (cost > unit->currAP) {
+
+		events.push_back(CombatEvent{ unit, CombatEventType::NotValid, 
+			"You don't have enough AP for this action.\nYour AP: " + std::to_string(unit->currAP) + "\tRequired AP: " +  std::to_string(cost)
+		});
+
+		return events;
+	}
+
 	Unit* damagedUnit = currentCombat->findUnit(x / 128, y / 128);
+
 	if (damagedUnit == nullptr)
 	{
-		CombatEvent ce = CombatEvent(unit, CombatEventType::None);
-		events.push_back(ce);
+		events.push_back(CombatEvent(unit, CombatEventType::NotValid, "No Target here"));
+		return events;
 	}
 	else
 	{

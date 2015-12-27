@@ -57,6 +57,6 @@ private:
 
 	std::vector<Unit*>& playerVector = std::vector<Unit*>();
 	
-	bool updateActionManager(ActionManagerInput inputEvent);
+	std::tuple<bool, std::string> updateActionManager(ActionManagerInput inputEvent);
 	
 };

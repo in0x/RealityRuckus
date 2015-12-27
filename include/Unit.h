@@ -26,9 +26,13 @@ public:
 	std::vector<ActionEvent*> learnedActions;
 	std::string name = "";
 
+	void setAPGainPerRound(int ap);
 	void loseAP(int amount);
 	void loseHP(int amount);
 	void gainAP(int amount);
 	void gainHP(int amount);
+	int replenishAP();
+private:
+	int apGain = 2;
 };
 

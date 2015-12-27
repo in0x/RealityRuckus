@@ -6,14 +6,22 @@
 class CombatState {
 public:
 	CombatState(std::vector<Unit*>);
+
 	Unit* getFirstUnit();
-	void updateListOfUnits();
-	bool isDone();
-	void listUnits();
 	Unit* findUnit(int x, int y);
+
+	void updateListOfUnits();
+	void listUnits();
+
+	bool isDone();
+
 	std::vector<Unit*> unitsInCombat;
+	std::vector<std::tuple<int, Unit*>> replenishUnitAP();
+
 private:
+
 	void removeUnit(Unit* unitToRemove);
+
 	struct CompareUnitApPtr 
 	{
 		bool operator()(Unit* lhs, Unit* rhs) {

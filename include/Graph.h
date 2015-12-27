@@ -11,9 +11,11 @@ private:
   bool isAccesible(Node node);
 
 public:  
+  Graph(int w, int h, std::array<std::array<Tile, 30>, 30>& m) : width(w), height(h), map(m) {}
+
   int width;
   int height;
-  Graph(int w, int h, std::array<std::array<Tile, 30>, 30>& m) : width(w), height(h), map(m) {}
+
   std::array<std::array<Tile, 30>, 30>& map;
   std::vector<Node> neighbours(Node node);
 };

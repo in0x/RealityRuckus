@@ -40,6 +40,7 @@ void CombatState::listUnits() {
 }
 
 void CombatState::removeUnit(Unit* unitToRemove) {
+
 	std::vector<Unit*>::iterator it;
 
 	for (it = unitsInCombat.begin(); it != unitsInCombat.end(); ++it) {
@@ -54,7 +55,20 @@ void CombatState::removeUnit(Unit* unitToRemove) {
 	unitsInCombat.erase(it);
 }
 
+std::vector<std::tuple<int, Unit*>> CombatState::replenishUnitAP() {
+
+	std::vector<std::tuple<int, Unit*>> apGains{};
+
+	for (auto& unit : unitsInCombat) {
+		if (unit->type == UnitType::player)
+		apGains.push_back(std::tuple<int, Unit*>{unit->replenishAP(), unit});
+	}
+
+	return apGains;
+}
+
 Unit* CombatState::findUnit(int x, int y) {
+
 	for (auto unit : unitsInCombat)
 		if (unit->x == x && unit->y == y)
 			return unit;
