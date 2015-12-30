@@ -12,5 +12,5 @@ Reality Ruckus is built using SFML in combination with TGUI
 # My contributions
 Most of the code in this project has been touched by all of us at one point or another. There are however a few modules that I wrote on my own, which I'm proud of. These would be a good place to get a feel for my code:
 
-    *  [Pathfinding (aStar and Graph stuff)](https://github.com/in0x/RealityRuckus/blob/master/src/aStarSearch.cpp)
-    * [AI](https://github.com/in0x/RealityRuckus/blob/master/src/AIComponent.cpp)
+   [Pathfinding (aStar and Graph stuff)](https://github.com/in0x/RealityRuckus/blob/master/src/aStarSearch.cpp)
+   [AI](https://github.com/in0x/RealityRuckus/blob/master/src/AIComponent.cpp)
