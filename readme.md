@@ -1,4 +1,4 @@
-# Reality Rucks
+# Reality Ruckus
 RR is a 2D semi turn-based Roguelike called, being developed in cooperation with 2 of my fellow students as part of our MMP2a (MultiMediaProject).
 
 In Reality Ruckus, you are a hero who has been chosen to restore order to time and space following a catastrophic event which collapsed multiple realites into each other. Along the way you will meet fellow heroes who have been forced to leave their dimension.
