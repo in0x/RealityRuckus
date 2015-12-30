@@ -1,35 +1,30 @@
 #include "AIComponent.h"
 
 std::ostream& operator<<(std::ostream& os, const Unit& unit) {
-	os << "Unit: ( Type = " + std::to_string(unit.type) + " ) (AP: " + std::to_string(unit.currAP) + " ) " + " ( x: " + std::to_string(unit.x) + " , y: " + std::to_string(unit.x) + " )";
+	os << "Unit: ( Type = " + std::to_string(unit.type) + " ) (AP: " + std::to_string(unit.currAP) + " ) " + " ( x: " + std::to_string(unit.x) + " , y: " + std::to_string(unit.y) + " )";
 	return os;
 }
 
 // Enemies is true per default, set to false to get all allies in range
-std::vector<UnitWithDist> findUnitsInRange(int range, AIResources& util, bool enemies) {
+std::vector<UnitWithDist> getUnitsDistance(AIResources& util, bool enemies) {
 	std::vector<UnitWithDist> unitsInRange{};
 
 	for (auto& other : util.combat->unitsInCombat) {
 
 		int d = distance(sf::Vector2i{ other->x, other->y }, sf::Vector2i{ util.unit->x, util.unit->y });
 
-		if (d <= range) {
+		if (other != util.unit) {
 
-			if (other != util.unit) {
-
-				if (enemies) {
-					if (other->type == UnitType::player) {
-						unitsInRange.push_back({ d, other });
-						std::cout << *other << std::endl;
-					}
+			if (enemies) {
+				if (other->type == UnitType::player) {
+					unitsInRange.push_back({ d, other });
 				}
-
-				else
-					if (other->type != UnitType::player)
-						unitsInRange.push_back({ d, other });
 			}
-		}
 
+			else
+				if (other->type != UnitType::player)
+					unitsInRange.push_back({ d, other });
+		}
 	}
 
 	auto comp = [](UnitWithDist& lhv, UnitWithDist rhv) -> bool {
@@ -58,9 +53,10 @@ sf::Vector2i findFieldToMoveTo(sf::Vector2i desired, int leeway, AIResources& ut
 	auto path = getPath(util, desired);
 	sf::Vector2i current = { util.unit->x, util.unit->y };
 		
-	Node end = *path.end();
+	Node end = path.back();
+
 	if (end.x == desired.x && end.y == desired.y)
-		return{ end.x, end.y };
+		return { end.x, end.y };
 
 	else {
 		for (int x = -leeway/2; x <= leeway / 2; x++) {
@@ -83,27 +79,31 @@ sf::Vector2i findFieldToMoveTo(sf::Vector2i desired, int leeway, AIResources& ut
 }
 
 
-void AIComponent::runAI(CombatState* combat, WeightedGraph* map, aStarSearch* pathFinder, Unit* unit) {
+std::vector<CombatEvent> AIComponent::runAI(CombatState* combat, WeightedGraph* map, aStarSearch* pathFinder, Unit* unit) {
 	util = { combat, map, pathFinder, unit };
-	ai->run(*this);
+	return ai->run(*this);
 }
 
-void runCommands(Command& actions, Unit* unit) {
+std::vector<CombatEvent> runCommands(Command& actions, Unit* unit) {
+	
+	std::vector<CombatEvent> events{};
+
 	for (int i = 0; i < actions.commands.size(); i++) {
-		unit->learnedActions[(int)actions.commands[i]]->doAction(unit, actions.targets[i].x, actions.targets[i].y);
+		auto ev = unit->learnedActions[(int)actions.commands[i]]->doAction(unit, actions.targets[i].x, actions.targets[i].y);
+		for (auto& e : ev)
+			events.push_back(e);
 	}
+	return events;
 }
 
-void MeleeFighterAI::run(AIComponent& component) {
+std::vector<CombatEvent> MeleeFighterAI::run(AIComponent& component) {
 
 	// A melee fighter wants to hit stuff, so he always tries to use his physical attack first
 	Command actions = component.evalPhysAttack->evaluate(component);
 
 	if (actions.commands[0] != CommandType::None) {
-		runCommands(actions, component.util.unit);
-		return;
+		return runCommands(actions, component.util.unit);
 	}
-
 }
 
 // This defines the AI of a melee attack. It is completely decoupled from all other factors, it only does its own thing
@@ -118,11 +118,19 @@ Command MeleeAttack::evaluate(AIComponent& component) {
 	Unit* target;
 
 	// Sorted by distance, ascending
-	auto enemies = findUnitsInRange(range, component.util);
+	auto enemies = getUnitsDistance(component.util);
 
 	// Attack the first unit in range
-	if (enemies[0].distance <= range)
+	if (enemies[0].distance <= range) {
 		target = enemies[0].unit;
+		auto moveTo = findFieldToMoveTo({ target->x, target->y - 1 }, range, util);
+
+		if (moveTo.x != -1) { //field found
+
+			actions = { { CommandType::Move, CommandType::Physical },{ moveTo,{ target->x, target->y } } };
+			return actions;
+		}
+	}
 
 	//Otherwise look for one that can be attacked with a move
 	else {

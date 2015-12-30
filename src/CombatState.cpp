@@ -30,9 +30,9 @@ void CombatState::updateListOfUnits() {
 		removeUnit(unit);
 	}
 
-	for (auto unit : unitsInCombat)
-		std::cout << "Unit: ( Type = " + std::to_string(unit->type) + " ) (AP: " + std::to_string(unit->currAP) + " ) " + " ( x: " + std::to_string(unit->x) + " , y: " + std::to_string(unit->x) + " )" << std::endl;
-	std::cout << "\n" << std::endl;
+	/*for (auto unit : unitsInCombat)
+		std::cout << "Unit: ( Type = " + std::to_string(unit->type) + " ) (AP: " + std::to_string(unit->currAP) + " ) " + " ( x: " + std::to_string(unit->x) + " , y: " + std::to_string(unit->y) + " )" << std::endl;
+	std::cout << "\n" << std::endl;*/
 }
 
 Unit* CombatState::getFirstUnit() {

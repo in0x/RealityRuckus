@@ -218,10 +218,10 @@ void lvlManager::testTileGen(TextureManager* texMng, sf::RenderWindow* window_pt
 }
 
 bool lvlManager::isAccessible(int x, int y){
-	if (x < 0 || y < 0 || x > 3840 || y > 3840){
+	if (x < 0 || y < 0 || x > 30 || y > 30){
 		return false;
 	}
-	return map[x / 128][y / 128].accessible;
+	return map[x][y].accessible;
 }
 
 sf::Vector2<int> lvlManager::findNextSpot(int w, int h){

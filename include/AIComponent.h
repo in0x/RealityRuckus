@@ -44,13 +44,13 @@ public:
 
 inline int distance(sf::Vector2i unit1pos, sf::Vector2i unitpos2);
 
-std::vector<UnitWithDist> findUnitsInRange(int range, AIResources& util ,bool enemies = true);
+std::vector<UnitWithDist> getUnitsDistance(AIResources& util ,bool enemies = true);
 	
 inline std::vector<Node> getPath(AIResources& util, sf::Vector2i target);
 
 sf::Vector2i findFieldToMoveTo(sf::Vector2i desired, int leeway, AIResources& util);
 
-void runCommands(Command& actions, Unit* unit);
+std::vector<CombatEvent> runCommands(Command& actions, Unit* unit);
 
 ////////////////
 	
@@ -65,13 +65,13 @@ public:
 // Interface for the units overall AI, which defines which skills it prefers to call 
 class UnitAI {
 public:
-	virtual void run(AIComponent& component) {};
+	virtual std::vector<CombatEvent> run(AIComponent& component) { return{}; };
 };
 
 class MeleeFighterAI : public UnitAI {
 public:
 	std::string name = "melee";
-	virtual void run(AIComponent& component) override;
+	virtual std::vector<CombatEvent> run(AIComponent& component) override;
 };
 
 
@@ -79,7 +79,7 @@ public:
 class AIComponent {
 public:
 	// Call this to let the unit evalute and execute its next move
-	void runAI(CombatState* combat, WeightedGraph* map, aStarSearch* pathfinder, Unit* unit);
+	std::vector<CombatEvent> runAI(CombatState* combat, WeightedGraph* map, aStarSearch* pathfinder, Unit* unit);
 
 	AIComponent(std::shared_ptr<MeleeFighterAI> eval, std::shared_ptr<SkillAI> physAI, std::shared_ptr<SkillAI> aggSpecAI, 
 		std::shared_ptr<SkillAI> defSpecAI, std::shared_ptr<SkillAI> moveAI) :

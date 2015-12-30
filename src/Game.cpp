@@ -52,7 +52,13 @@ void Game::init() {
 		new MoveActionEvent("Move", "Move to a specific position.",pActionMng)
 	};
 
-	pUnitMng->actions = playerActions;
+	pUnitMng->actions = {
+		new AttackActionEvent("Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 6),
+		new ActionEvent("Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,0,0),
+		new ActionEvent("Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
+		new MoveActionEvent("Move", "Move to a specific position.",pActionMng)
+	};
+	;
 
 	pLvlMng->genMap(pTexMng, pUnitMng);
 
@@ -137,19 +143,22 @@ void Game::update() {
 		return false;
 	};
 
+	bool aiTurn = false;
+
 	// Main Game Loop
 	while (window.isOpen())
 	{
-		bool aiTurn = false;
+		aiTurn = false;
 
 		// Selects whether player or AI makes next turn
 		if (state == GameState::combat) {
 			Unit* npc = currentCombat->getFirstUnit();
 
 			if (!isPlayer(playerVector, npc)) {
-				std::cout << "npc turn" << std::endl;
-				npc->aiComponent->runAI(currentCombat, &pLvlMng->createGraph(), &pUnitMng->pathFinder, npc);
+				auto events = npc->aiComponent->runAI(currentCombat, &pLvlMng->createGraph(), &pUnitMng->pathFinder, npc);
 				aiTurn = true;
+				currentCombat->updateListOfUnits();
+				pGuiMng->handleCombatEvents(events, playerVector);
 			}
 		}
 
@@ -160,7 +169,7 @@ void Game::update() {
 
 			if (inputState == InputState::normal) {
 	
-				if (event.type == sf::Event::Closed || sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+				if (event.type == sf::Event::Closed )//|| sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
 					window.close();
 				if (!sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.type == sf::Event::MouseMoved)
 				{
@@ -196,8 +205,15 @@ void Game::update() {
 			// This state is entered when the player has selected an ability. Lets the player choose a target location to use the ab. on
 			else if (inputState == InputState::WaitingForActionInput) {
 
-				if (event.type == sf::Event::Closed || sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+				if (event.type == sf::Event::Closed)
 					window.close();
+
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
+					delete userActionInput;
+					userActionInput = nullptr;
+					cursor.setTexture(cursorRegular);
+					inputState = InputState::normal;
+				}
 
 				if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Button::Left)
 				{
@@ -246,7 +262,8 @@ void Game::update() {
 
 		//One or more enemies are in range and no combat is happening right now -> enter new combat
 		if (visibleUnits.size() > 1 && currentCombat == nullptr) {
-
+		
+			//visibleUnits.push_back(p);
 			state = GameState::combat;
 			currentCombat = new CombatState(visibleUnits);
 			pActionMng->setCombatState(currentCombat);

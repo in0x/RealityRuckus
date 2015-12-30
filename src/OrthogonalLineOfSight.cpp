@@ -12,7 +12,7 @@ std::vector<Unit*> OrthogonalLineOfSight::getVisibleUnits(lvlManager* lvlMng, Un
 	for (int i = 1; i < unitMng->unitList.size(); i++) {
 		
 		if (checkVisibility(findLoS(unitMng->player->x, unitMng->player->y, unitMng->unitList[i]->x, unitMng->unitList[i]->y, map)))
-			visibleUnits.push_back(unitMng->unitList[i]);
+				visibleUnits.push_back(unitMng->unitList[i]);
 	}
 
 	return visibleUnits;

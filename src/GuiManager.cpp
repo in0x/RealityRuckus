@@ -131,12 +131,12 @@ void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vecto
 				updatePlayerPositionMap(e.oldX, e.oldY, e.newX, e.newY);
 			}
 
-			else if (e.type == 2) {
+			else if (e.type == CombatEventType::AP) {
 				updateAPbar(index, e.APChange);
 				updateAPbar(index, e.APChange, true);
 			}
 
-			else if (e.type == 4) {
+			else if (e.type == CombatEventType::HP) {
 				updateHPbar(index, e.HPChange);
 				updateHPbar(index, e.HPChange, true);
 				break;

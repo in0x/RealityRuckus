@@ -38,6 +38,6 @@ public:
 	int replenishAP();
 
 private:
-	int apGain = 2;
+	int apGain = 4;
 };
 

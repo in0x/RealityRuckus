@@ -69,15 +69,19 @@ std::vector<DrawableUnit> UnitManager::getUnits() {
 }
 
 int UnitManager::moveUnit(int x, int y, Unit* unit) {
+
+	if (x > 30)
+		x /= 128;
+	if (y > 30)
+		y /= 128;
+
 	if (!(lvl->isAccessible(x, y))) {
 		return 0;
 	}
-	else if ((lvl->isOccupied(x/128, y/128))) {
+
+	else if ((lvl->isOccupied(x, y))) {
 		return 0;
 	}
-
-	x /= 128;
-	y /= 128;
 
 	std::vector<Node> path = pathFinder.findPath(Node{unit->x, unit->y}, Node{ x, y }, lvl->createGraph());
 
@@ -87,9 +91,12 @@ int UnitManager::moveUnit(int x, int y, Unit* unit) {
 		return 0;
 
 	lvl->moveUnitInMap(end.x, end.y, unit);
-	
+
+	std::cout << "Moved Unit ( Type " << unit->type << " ) from x " << unit->x << " y " << unit->y << " to x " << end.x << " y " << end.y << std::endl;
+
 	unit->x = end.x;
 	unit->y = end.y;
+
 	return path.size();
 }
 

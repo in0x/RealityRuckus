@@ -29,13 +29,20 @@
 
 	std::vector<CombatEvent> AttackActionEvent::doAction(Unit* sender, int x, int y) {
 
-		std::vector<CombatEvent> events = actionmanager->damageUnit(sender, x, y, 5, range, cost);
+		// Passing around screen space coordinates is acutally so stupid an annoying
+		if (x > 30)
+			x /= 128;
+		if (y > 30)
+			y /= 128;
+
+		std::vector<CombatEvent> events = actionmanager->damageUnit(sender, x , y, 5, range, cost);
 		
 		if (events[0].type != CombatEventType::NotValid) {
 			CombatEvent ce = CombatEvent(sender, CombatEventType::AP);
 			sender->loseAP(cost);
 			ce.setAPChange(cost);
 			events.push_back(ce);
+			
 		}
 
 		return events;

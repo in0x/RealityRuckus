@@ -37,8 +37,8 @@ std::vector<CombatEvent> ActionManager::damageUnit(Unit * unit, int x, int y, in
 {
 	std::vector<CombatEvent> events;
 
-	if (!checkRange(range, sf::Vector2i{ x / 128, y / 128 }, sf::Vector2i{ unit->x, unit->y })) {
-		int distance = abs(unit->x - x / 128) + abs(unit->y - y / 128);
+	if (!checkRange(range, sf::Vector2i{ x, y }, sf::Vector2i{ unit->x, unit->y })) {
+		int distance = abs(unit->x - x ) + abs(unit->y - y );
 
 		events.push_back(CombatEvent{unit, CombatEventType::NotValid, 
 			"You need to move closer for this action\nDistance from target: " + std::to_string(distance) +  "\tSkill Range: " + std::to_string(range)
@@ -56,7 +56,7 @@ std::vector<CombatEvent> ActionManager::damageUnit(Unit * unit, int x, int y, in
 		return events;
 	}
 
-	Unit* damagedUnit = currentCombat->findUnit(x / 128, y / 128);
+	Unit* damagedUnit = currentCombat->findUnit(x, y);
 
 	if (damagedUnit == nullptr)
 	{
