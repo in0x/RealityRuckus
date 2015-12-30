@@ -1,9 +1,11 @@
 #pragma once
 #include <iostream>
+#include "CombatEvent.h"
 
 class ActionManager;
 class CombatEvent;
 class Unit;
+class AIComponent;
 
 class ActionEvent {
 public:

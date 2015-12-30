@@ -25,18 +25,36 @@ void Game::init() {
 
 	pUiMng = new UIManager();
 
-	pUnitMng = new UnitManager(pLvlMng, pTexMng, pSoundMng);
-	pLvlMng->genMap(pTexMng, pUnitMng);
+	pUnitMng = new UnitManager(pLvlMng, pTexMng, pSoundMng, &aiFactory);
 	
 	pActionMng = new ActionManager(pUnitMng);
 
 	p = new Player(pTexMng, sf::Sprite(), UnitType::player);
+
+	/*
+	
+		SUPER IMPORTANT, IF YOU SEE AND THIS NEGLECT IT AND IT CAUSES A BUG ILL SMACK YA
+		A UNITS ACTIONS NEED TO ALWAYS BE INSERTED INTO THE VECTOR IN A CERTAIN ORDER:
+
+		1. PHYSICAL ATTACK (I.E. SWORD ATTACK, RIFLE SHOT)
+		2. AGGRESSIVE SPECIAL  -> THIS IS ALWAYS SOMETHING THATS USED ON THE ENEMY
+		3. DEFENSIVE SPECIAL -> THIS IS ALWAYS USED ON A FRIENDLY
+		4. MOVE
+
+		THE AI NEEDS THIS ORDER TO CORRECTLY EXECUTE ITS ACTIONS WITHOUT SPECIFICALLY KNOWING ABOUT THEM
+
+	*/
+
 	std::vector<ActionEvent*> playerActions = { 
-		new MoveActionEvent("Move", "Move to a specific position.",pActionMng),
 		new AttackActionEvent("Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5),
+		new ActionEvent("Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,0,0),
 		new ActionEvent("Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
-		new ActionEvent("Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,0,0)
+		new MoveActionEvent("Move", "Move to a specific position.",pActionMng)
 	};
+
+	pUnitMng->actions = playerActions;
+
+	pLvlMng->genMap(pTexMng, pUnitMng);
 
 	p->learnedActions = playerActions;
 	pUnitMng->setPlayer(p);
@@ -122,21 +140,26 @@ void Game::update() {
 	// Main Game Loop
 	while (window.isOpen())
 	{
+		bool aiTurn = false;
+
+		// Selects whether player or AI makes next turn
+		if (state == GameState::combat) {
+			Unit* npc = currentCombat->getFirstUnit();
+
+			if (!isPlayer(playerVector, npc)) {
+				std::cout << "npc turn" << std::endl;
+				npc->aiComponent->runAI(currentCombat, &pLvlMng->createGraph(), &pUnitMng->pathFinder, npc);
+				aiTurn = true;
+			}
+		}
+
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
-			if (inputState == InputState::normal) {
+			if (aiTurn) break;
 
-				// Selects whether player or AI makes next turn
-				if (state == GameState::combat) {
-					Unit* nextActor = currentCombat->getFirstUnit();
-					if (!isPlayer(playerVector, nextActor)) {
-						//AiController.makeMove();
-						//std::cout << "NPC turn" << std::endl;
-						//break;
-					}
-				}
-				
+			if (inputState == InputState::normal) {
+	
 				if (event.type == sf::Event::Closed || sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
 					window.close();
 				if (!sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.type == sf::Event::MouseMoved)
@@ -223,19 +246,23 @@ void Game::update() {
 
 		//One or more enemies are in range and no combat is happening right now -> enter new combat
 		if (visibleUnits.size() > 1 && currentCombat == nullptr) {
+
 			state = GameState::combat;
 			currentCombat = new CombatState(visibleUnits);
 			pActionMng->setCombatState(currentCombat);
 			pGuiMng->initCombatGUI(*currentCombat, playerVector, pLvlMng->map);
+
 		}
 
 		// Combat is over, go back to overworld exploration
 		if (state == GameState::combat && currentCombat->isDone()) {
+
 			pGuiMng->returnToExploration(playerVector.size());
 			delete currentCombat;
 			currentCombat = nullptr;
 			visibleUnits.clear();
 			state = GameState::exploration;
+
 		}
 
 		//Camera movement

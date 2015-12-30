@@ -2,7 +2,7 @@
 #include "Unit.h"
 #include <iostream>
 // unit with highest ratio of max to current AP, if same, moves are simultaneously.
-Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng,int xPos, int yPos, UnitType u)
+Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng, std::shared_ptr<AIComponent> aiComp, int xPos, int yPos, UnitType u)
 {
 	maxAP = mAP;
 	currAP = mAP;
@@ -39,6 +39,8 @@ Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng,int xPos, int 
 			break;
 	}
 
+	aiComponent = aiComp;
+
 	if (s.getTexture() == nullptr)
 	 	sprite = sp;
 	
@@ -48,7 +50,7 @@ Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng,int xPos, int 
 }
 
 
-Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng, int xPos, int yPos, UnitType u, std::vector<ActionEvent*> actions) {
+Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng, int xPos, int yPos, UnitType u, std::vector<ActionEvent*> actions, std::shared_ptr<AIComponent> aiComp) {
 
 	maxAP = mAP;
 	currAP = mAP;
@@ -82,6 +84,8 @@ Unit::Unit(int mAP, int mHP, sf::Sprite s, TextureManager* texMng, int xPos, int
 			name = "Player";
 			break;
 	}
+
+	aiComponent = aiComp;
 
 	if (s.getTexture() == nullptr)
 	 	sprite = sp;
@@ -106,7 +110,6 @@ Unit::Unit() {
 Unit::~Unit()
 {
 }
-
 
 void Unit::loseAP(int amount) {
 	currAP -= amount;

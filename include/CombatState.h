@@ -2,9 +2,16 @@
 #include "Unit.h"
 #include <algorithm>
 
+//class Unit;
+
+//struct CompareUnitApPtr {
+//public:
+//	bool operator()(Unit* lhs, Unit* rhs);
+//} unitComparer;
 
 class CombatState {
 public:
+	
 	CombatState(std::vector<Unit*>);
 
 	Unit* getFirstUnit();
@@ -22,11 +29,11 @@ private:
 
 	void removeUnit(Unit* unitToRemove);
 
-	struct CompareUnitApPtr 
-	{
-		bool operator()(Unit* lhs, Unit* rhs) {
-			return lhs->currAP > rhs->currAP;
-		}
-	} unitComparer; 
+	//struct CompareUnitApPtr 
+	//{
+	//	bool operator()(Unit* lhs, Unit* rhs) {
+	//		return lhs->currAP > rhs->currAP;
+	//	}
+	//} unitComparer; 
 };
 

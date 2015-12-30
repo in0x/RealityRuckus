@@ -2,10 +2,19 @@
 #include "CombatState.h"
 #include <iostream>
 
+struct CompareUnitApPtr
+{
+	bool operator()(Unit* lhs, Unit* rhs) {
+		return lhs->currAP > rhs->currAP;
+	}
+} unitComparer;
+
+
 CombatState::CombatState(std::vector<Unit*> combatUnitPtrs) {
 	unitsInCombat = combatUnitPtrs;
 	std::sort(unitsInCombat.begin(), unitsInCombat.end(), unitComparer); 
 }
+
 
 void CombatState::updateListOfUnits() {
 	std::sort(unitsInCombat.begin(), unitsInCombat.end(), unitComparer);

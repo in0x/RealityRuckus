@@ -11,6 +11,8 @@
 #include "Event.h"
 #include "GuiManager.h"
 #include "ActionManagerInput.h"
+#include "AIComponent.h"
+#include <memory>
 
 class GUImanager; //forward declartion so game and gui can use each other
 
@@ -49,6 +51,7 @@ private:
 	GUImanager* pGuiMng = nullptr;
 	CombatState* currentCombat = nullptr;
 	ActionManagerInput* userActionInput = nullptr;
+	AIFactory aiFactory = {};
 
 	Player* p;
 	

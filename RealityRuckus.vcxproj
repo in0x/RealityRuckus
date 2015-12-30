@@ -164,6 +164,7 @@
     <ClInclude Include="include\ActionEvent.h" />
     <ClInclude Include="include\ActionManager.h" />
     <ClInclude Include="include\ActionManagerInput.h" />
+    <ClInclude Include="include\AIComponent.h" />
     <ClInclude Include="include\AnimatedSprite.hpp" />
     <ClInclude Include="include\Animation.hpp" />
     <ClInclude Include="include\aStarSearch.h" />
@@ -196,6 +197,7 @@
   <ItemGroup>
     <ClCompile Include="src\ActionEvent.cpp" />
     <ClCompile Include="src\ActionManager.cpp" />
+    <ClCompile Include="src\AIComponent.cpp" />
     <ClCompile Include="src\AnimatedSprite.cpp" />
     <ClCompile Include="src\Animation.cpp" />
     <ClCompile Include="src\aStarSearch.cpp" />

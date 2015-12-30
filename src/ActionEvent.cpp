@@ -11,7 +11,7 @@
 		range(range),
 		cost(cost) {}
 
-   std::vector<CombatEvent> ActionEvent::doAction(Unit* sender, int x, int y) { return std::vector<CombatEvent>(); }
+	std::vector<CombatEvent> ActionEvent::doAction(Unit* sender, int x, int y) { return std::vector<CombatEvent>{}; }
 
 
 

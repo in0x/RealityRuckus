@@ -56,16 +56,35 @@ void lvlManager::genTiles(Block tiles, int x, int y, UnitManager* unitMng){
 			map[j][i] = tiles.tiles[count];
 			map[j][i].accessible = true;
 			count++;
-			//unitMng->spawnUnit(doge, x, y);
+
 			if (rand() % 100 + 1 <= 5) {
-				if(rand()%2)
+				if (rand() % 2)
 					unitMng->spawnUnit(robotdude, j, i, map[j][i].accessible);
-				else	
+				else
 					unitMng->spawnUnit(robotfly, j, i, map[j][i].accessible);
 				setOccupied(j, i, true);
 			}
 		}
 	}
+	//spawnUnits(unitMng);
+}
+
+void lvlManager::spawnUnits(UnitManager* unitMng) {
+	srand(time(nullptr));
+
+	for (int x = 0; x < 30; x++) {
+		for (int y = 0; y < 30; y++)
+			if (map[x][y].accessible)
+				if ( rand() % 1000 + 1 <= 10 ) {
+					if (rand() % 2)
+						unitMng->spawnUnit(robotdude, x, y, map[x][y].accessible);
+					else
+						unitMng->spawnUnit(robotfly, x, y, map[x][y].accessible);
+					setOccupied(x, y, true);
+				}
+	}
+	
+			
 }
 
 void lvlManager::genMap(TextureManager* texMng, UnitManager* unitMng) {
@@ -93,7 +112,7 @@ void lvlManager::genDrawable(sf::Sprite* output){
 				texture.draw(renderSprite);
 			}*/
 			//Leere Tiles auf inaccessible setzten und blocked textur verwenden
-			if (map[i][j].sprite.getTexture() == NULL){
+			if (map[i][j].sprite.getTexture() == nullptr){
 				sf::Texture tex = sf::Texture();
 				int connections = 0;
 				if (j == 0 || map[i][j - 1].accessible == false)//up

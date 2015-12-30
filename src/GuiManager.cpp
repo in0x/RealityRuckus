@@ -549,11 +549,13 @@ void GUImanager::createEnemyInfo(Unit* unit, int unitIndex) {
 
 	trigger->connect("MouseEntered", [infoLabel]() {
 		std::cout << "Show\n";
-		infoLabel->showWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(300));
+		//infoLabel->showWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(300));
+		infoLabel->show();
 	});
 
 	trigger->connect("MouseLeft", [infoLabel]() {
-		infoLabel->hideWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(300));
+		//infoLabel->hideWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(300));
+		infoLabel->hide();
 		std::cout << "Hide\n";
 	});
 

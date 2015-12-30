@@ -10,12 +10,13 @@
 #include <thread>
 #include <chrono>
 
-UnitManager::UnitManager(lvlManager* lvlMng, TextureManager* texMng, SoundManager* s) {
+UnitManager::UnitManager(lvlManager* lvlMng, TextureManager* texMng, SoundManager* s, AIFactory* aiFactory) {
 	unitList = std::vector<Unit*>();
 	lvl = lvlMng;
 	tex = texMng;
 	snd = s;
-
+	this->aiFactory = aiFactory;
+	
  	dieBuffer = s->soundTable.at("die");
 	die = sf::Sound();
 	die = sf::Sound(dieBuffer);
@@ -32,15 +33,17 @@ bool UnitManager::spawnUnit(UnitType u, int x, int y, bool isAccessible) {
 		case standard:
 			break;
 		case doge:	//(int mAP, int mHP, sf::Sprite s, TextureManager* texMng,int xPos, int yPos, UnitType u)
-			unit = new Unit(1000, 50, sf::Sprite(), tex, x, y, doge); 
+			unit = new Unit(1000, 50, sf::Sprite(), tex, nullptr, x, y, doge);
 			break;
 		case turtle:	
-			unit = new Unit(10, 10, sf::Sprite(), tex, x, y, turtle); 
+			unit = new Unit(10, 10, sf::Sprite(), tex, nullptr, x, y, turtle);
 		case robotdude:
-			unit = new Unit(10, 10, sf::Sprite(), tex, x, y, robotdude);
+			unit = new Unit(19, 10, sf::Sprite(), tex, aiFactory->getAIComponent("meleefighter"), x, y, robotdude);
+			unit->learnedActions = actions;
 			break;
 		case robotfly:
-			unit = new Unit(10, 10, sf::Sprite(), tex, x, y, robotfly);
+			unit = new Unit(19, 10, sf::Sprite(), tex, aiFactory->getAIComponent("meleefighter"), x, y, robotfly);
+			unit->learnedActions = actions;
 			break;
 	};
 
@@ -79,7 +82,6 @@ int UnitManager::moveUnit(int x, int y, Unit* unit) {
 	std::vector<Node> path = pathFinder.findPath(Node{unit->x, unit->y}, Node{ x, y }, lvl->createGraph());
 
 	Node end = path.back();
-	std::cout << end.x << "  " << end.y << std::endl;
 	
 	if (end.x == 0 && end.y == 0)
 		return 0;
@@ -105,18 +107,6 @@ void UnitManager::removeAP(Unit* unit, int ap) {
 	unit->loseAP(ap);
 }
 
-//Mock Combat: when entering Combat, update() sends an attack at the position at which you shift right click.  
-void UnitManager::attackUnit(int unitX, int unitY, Unit* attackerUnit, Unit* unitToAttack) {
-	if (!lvl->isOccupied(unitX, unitY))
-		return;
-
-	int attackValue = (rand() % 10) + 1;
-
-	unitToAttack->currHP -= attackValue;
-
-	if (unitToAttack->currHP <= 0)
-		removeUnit(unitToAttack);
-}
 
 void UnitManager::removeUnit(Unit* unitToRemove) {
 	std::vector<Unit*>::iterator it;
@@ -135,55 +125,6 @@ void UnitManager::removeUnit(Unit* unitToRemove) {
 	die.play();
 }
 
-
-void UnitManager::runCombat(CombatState* combatState, CombatEvent event) {
-	/*if (event.eventType == ActionEvent)
-		return;
-
-	Unit* firstUnit = combatState->getFirstUnit();
-
-	if (event.eventType == ActionEvent::attack) {
-
-		int attackX = (event.targetX > 30) ? (event.targetX / 128) : event.targetX;
-		int attackY = (event.targetY > 30) ? (event.targetY / 128) : event.targetY;
-
-		Unit* unitToAttack = combatState->findUnit(attackX, attackY);
-		std::cout << "Looking for Unit at " << attackX << " " << attackY << std::endl;
-
-		if (unitToAttack != nullptr)
-			attackUnit(attackX, attackY, event.sender, unitToAttack);
-		else
-			std::cout << "No Unit to attack here" << std::endl;
-
-	}*/
-
-	combatState->updateListOfUnits();
-
-	combatState->listUnits();
-}
-
-
-
-void UnitManager::testCombatState() {
-	std::vector<Unit*> units;
-
-	for (int i = 0; i < 4; i++) {
-		Unit* u = new Unit{ i, i, sf::Sprite(), tex, turtle };
-		units.push_back(u);
-	}
-
-	Unit* p = new Unit{ 30, 30, sf::Sprite(), tex, UnitType::player };
-	Unit* d = new Unit{ 15, 15, sf::Sprite(), tex, doge };
-
-	units.push_back(p);
-	units.push_back(d);
-
-	CombatState state(units);
-	std::cout << "testCombatState()" << std::endl;
-
-	for (auto uPtr : units)
-		delete uPtr;
-}
 
 void UnitManager::setPlayer(Player * p)
 {

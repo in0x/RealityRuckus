@@ -37,6 +37,7 @@ public:
 	void setAccessTile(int x, int y, bool accessability);
 	void setOccupied(int x, int y, bool occupied);
 	void moveUnitInMap(int newX, int newY, Unit* unit);
+	void spawnUnits(UnitManager* unitMng);
 
 	bool isAccessible(int, int);
 	bool isOccupied(int x, int y);

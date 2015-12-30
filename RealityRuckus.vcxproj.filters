@@ -23,6 +23,7 @@
     <ClCompile Include="src\WeightedGraph.cpp" />
     <ClCompile Include="src\ActionEvent.cpp" />
     <ClCompile Include="src\ActionManager.cpp" />
+    <ClCompile Include="src\AIComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ActionEvent.h" />
@@ -56,6 +57,7 @@
     <ClInclude Include="include\EncryptedInputStream.h" />
     <ClInclude Include="include\ActionManagerInput.h" />
     <ClInclude Include="include\ActionManager.h" />
+    <ClInclude Include="include\AIComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\run.sh" />
