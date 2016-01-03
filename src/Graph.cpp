@@ -8,18 +8,22 @@ std::vector<Node> Graph::neighbours(Node node) {
 
 	for (auto& d : directions) {
 
-		if (isInLimits(Node {node.x + d.x, node.y + d.y}) && isAccesible(Node{node.x + d.x, node.y + d.y}))
+		if (isInLimits(Node {node.x + d.x, node.y + d.y}) && isAccesible(Node{node.x + d.x, node.y + d.y}) && !isOccupied(Node{ node.x + d.x, node.y + d.y }))
 			neighbours.push_back(Node{node.x + d.x, node.y + d.y});
 	}
 
 	return neighbours;
 }
 
-bool Graph::isAccesible(Node n) {
+bool Graph::isAccesible(Node& n) {
 	return map[n.x][n.y].accessible;
 }
 
-bool Graph::isInLimits(Node n) {
+bool Graph::isOccupied(Node& n) {
+	return map[n.x][n.y].occupied;
+}
+
+bool Graph::isInLimits(Node& n) {
 	return 0 <= n.x && n.x < width && 0 <= n.y && n.y < height;
 }
 

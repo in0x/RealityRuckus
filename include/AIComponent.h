@@ -15,7 +15,8 @@ enum class CommandType {
 	Physical = 0,
 	AggSpecial = 1,
 	DefSpecial = 2,
-	Move = 3
+	Move = 3,
+	Skip = 4
 };
 
 
@@ -40,19 +41,23 @@ public:
 	Unit* unit;
 };
 
-//////// Utility Functions ////////
 
-inline int distance(sf::Vector2i unit1pos, sf::Vector2i unitpos2);
+class AIUtility {
+public:
+	static inline int distance(sf::Vector2i unit1pos, sf::Vector2i unitpos2);
 
-std::vector<UnitWithDist> getUnitsDistance(AIResources& util ,bool enemies = true);
-	
-inline std::vector<Node> getPath(AIResources& util, sf::Vector2i target);
+	static std::vector<UnitWithDist> getUnitsDistance(AIResources& util, bool enemies = true);
 
-sf::Vector2i findFieldToMoveTo(sf::Vector2i desired, int leeway, AIResources& util);
+	static inline std::vector<Node> getPath(AIResources& util, sf::Vector2i target);
 
-std::vector<CombatEvent> runCommands(Command& actions, Unit* unit);
+	static sf::Vector2i findFieldToMoveTo(sf::Vector2i desired, int leeway, AIResources& util, int minDistance = 0);
 
-////////////////
+	static std::vector<CombatEvent> runCommands(Command& actions, Unit* unit);
+
+	static inline int countUnitsInVicinity(std::vector<UnitWithDist>, sf::Vector2i pos, int distance);
+
+};
+
 	
 	
 // Interface for a single skill AI, override for different skill usage
@@ -70,7 +75,11 @@ public:
 
 class MeleeFighterAI : public UnitAI {
 public:
-	std::string name = "melee";
+	virtual std::vector<CombatEvent> run(AIComponent& component) override;
+};
+
+class RangedCasterAI : public UnitAI {
+public:
 	virtual std::vector<CombatEvent> run(AIComponent& component) override;
 };
 
@@ -81,17 +90,17 @@ public:
 	// Call this to let the unit evalute and execute its next move
 	std::vector<CombatEvent> runAI(CombatState* combat, WeightedGraph* map, aStarSearch* pathfinder, Unit* unit);
 
-	AIComponent(std::shared_ptr<MeleeFighterAI> eval, std::shared_ptr<SkillAI> physAI, std::shared_ptr<SkillAI> aggSpecAI, 
+	AIComponent(std::shared_ptr<UnitAI> eval, std::shared_ptr<SkillAI> physAI, std::shared_ptr<SkillAI> offSpecAI, 
 		std::shared_ptr<SkillAI> defSpecAI, std::shared_ptr<SkillAI> moveAI) :
 		ai(eval),
 		evalPhysAttack(physAI),
-		evalAggSpecial(aggSpecAI),
+		evalOffSpecial(offSpecAI),
 		evalDefSpecial(defSpecAI),
 		evalMove(moveAI) {}
 
-	std::shared_ptr<MeleeFighterAI> ai;
+	std::shared_ptr<UnitAI> ai;
 	std::shared_ptr<SkillAI> evalPhysAttack;
-	std::shared_ptr<SkillAI> evalAggSpecial;
+	std::shared_ptr<SkillAI> evalOffSpecial;
 	std::shared_ptr<SkillAI> evalDefSpecial;
 	std::shared_ptr<SkillAI> evalMove;
 	
@@ -106,7 +115,46 @@ public:
 };
 
 
+
+
 class MeleeAttack : public SkillAI {
+public:
+	virtual Command evaluate(AIComponent& component) override;
+};
+
+class CleaveAttack : public SkillAI {
+public:
+	virtual Command evaluate(AIComponent& component) override;
+};
+
+class ApplySelfBuff : public SkillAI {
+public:
+	ApplySelfBuff(std::function<void(float&)> buff) : buff(buff) {}
+	virtual Command evaluate(AIComponent& component) override;
+private:
+	std::function<void(float&)> buff;
+};
+
+class Reposition : public SkillAI {
+public:
+	Reposition(int unitsInRange, int healthRt, int dist) : maxUnitsInRange(unitsInRange), criticalHealthRatio(healthRt), desiredDistance(dist) {}
+	virtual Command evaluate(AIComponent& component) override;
+private:
+	int maxUnitsInRange;
+	int desiredDistance;
+	float criticalHealthRatio;
+};
+
+
+class ApplyAPDebuff : public SkillAI {
+public:
+	ApplyAPDebuff(std::function<void(float&)> debuff) : debuff(debuff) {}
+	virtual Command evaluate(AIComponent& component) override;
+private:
+	std::function<void(float&)> debuff;
+};
+
+class HealFriendly : public SkillAI {
 public:
 	virtual Command evaluate(AIComponent& component) override;
 };

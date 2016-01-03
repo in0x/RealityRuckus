@@ -2,6 +2,20 @@
 #include "Game.h"
 #include "ActionManager.h"
 #include <TGUI/TGUI.hpp>
+#include <thread>
+#include <chrono>
+
+/*
+SUPER IMPORTANT, IF YOU SEE THIS AND NEGLECT IT AND IT CAUSES A BUG ILL SMACK YA
+A UNITS ACTIONS NEED TO ALWAYS BE INSERTED INTO THE VECTOR IN A CERTAIN ORDER:
+
+1. PHYSICAL ATTACK (I.E. SWORD ATTACK, RIFLE SHOT)
+2. OFFENSIVE SPECIAL  -> THIS IS ALWAYS SOMETHING THATS USED ON THE ENEMY
+3. DEFENSIVE SPECIAL -> THIS IS ALWAYS USED ON A FRIENDLY
+4. MOVE
+
+THE AI NEEDS THIS IN ORDER TO CORRECTLY EXECUTE ITS ACTIONS WITHOUT SPECIFICALLY KNOWING ABOUT THEM
+*/
 
 Game::Game() {
 
@@ -11,7 +25,7 @@ void Game::init() {
 
 	state = GameState::loading;
 
-	window.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Corgi Movement Simulator");
+	window.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "REALITY RUCKUS", sf::Style::Close);//sf::Style::Fullscreen);
 	
 	pTexMng = new TextureManager();
 	pTexMng->getFiles();
@@ -24,46 +38,21 @@ void Game::init() {
 	pSoundMng->createSounds();
 
 	pUiMng = new UIManager();
+	pAnimationMng = new AnimationManager();
+	pAnimationMng->registerAnimation("bullet", pTexMng->textureTable["bullet"]);
+	pAnimationMng->registerAnimation("plasma", pTexMng->textureTable["plasma"]);
+	pAnimationMng->registerAnimation("explosion", pTexMng->textureTable["explosion"]);
 
 	pUnitMng = new UnitManager(pLvlMng, pTexMng, pSoundMng, &aiFactory);
 	
-	pActionMng = new ActionManager(pUnitMng);
+	pActionMng = new ActionManager(pUnitMng, pAnimationMng);
 
-	p = new Player(pTexMng, sf::Sprite(), UnitType::player);
+	pUnitMng->pActionMng = pActionMng;
 
-	/*
-	
-		SUPER IMPORTANT, IF YOU SEE AND THIS NEGLECT IT AND IT CAUSES A BUG ILL SMACK YA
-		A UNITS ACTIONS NEED TO ALWAYS BE INSERTED INTO THE VECTOR IN A CERTAIN ORDER:
-
-		1. PHYSICAL ATTACK (I.E. SWORD ATTACK, RIFLE SHOT)
-		2. AGGRESSIVE SPECIAL  -> THIS IS ALWAYS SOMETHING THATS USED ON THE ENEMY
-		3. DEFENSIVE SPECIAL -> THIS IS ALWAYS USED ON A FRIENDLY
-		4. MOVE
-
-		THE AI NEEDS THIS ORDER TO CORRECTLY EXECUTE ITS ACTIONS WITHOUT SPECIFICALLY KNOWING ABOUT THEM
-
-	*/
-
-	std::vector<ActionEvent*> playerActions = { 
-		new AttackActionEvent("Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5),
-		new ActionEvent("Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,0,0),
-		new ActionEvent("Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
-		new MoveActionEvent("Move", "Move to a specific position.",pActionMng)
-	};
-
-	pUnitMng->actions = {
-		new AttackActionEvent("Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 6),
-		new ActionEvent("Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,0,0),
-		new ActionEvent("Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
-		new MoveActionEvent("Move", "Move to a specific position.",pActionMng)
-	};
-	;
+	spawnPlayer(PlayerType::armyfighter, 0, 15);
+	spawnPlayer(PlayerType::armyfighter, -100, -100);
 
 	pLvlMng->genMap(pTexMng, pUnitMng);
-
-	p->learnedActions = playerActions;
-	pUnitMng->setPlayer(p);
 
 	pLvlMng->genDrawable(&terrain);
 	pUiMng->setTerrain(terrain);
@@ -75,8 +64,7 @@ void Game::init() {
 		std::cout << "could not load font" << std::endl;
 
 	pGuiMng = new GUImanager(WINDOW_WIDTH, WINDOW_HEIGHT, &window, this);
-	playerVector = { p, p, p};
-	// playerVector = { p };
+	
 	pGuiMng->initExplorationGUI(playerVector, pLvlMng->map);
 
 	cursorAttack.loadFromFile("cursor_attack.png");
@@ -97,7 +85,7 @@ Game::~Game() {
 	delete pTexMng;
 	delete pUiMng;
 	delete pLoS;
-	delete p;
+	
 	delete gameFont;
 	delete pGuiMng;
 }
@@ -121,6 +109,10 @@ std::tuple<bool, std::string> Game::updateActionManager(ActionManagerInput input
 	return std::tuple<bool, std::string>{true, ""};
 }
 
+void Game::setActivePlayer(int index) {
+	activeP = index;
+}
+
 // This function gets called by the GUImanager when the player has chosen an ability to execute
 void Game::getGUIevent(int playerIndex, int abilityIndex) {
 	inputState = InputState::WaitingForActionInput;
@@ -128,10 +120,40 @@ void Game::getGUIevent(int playerIndex, int abilityIndex) {
 	cursor.setTexture(cursorAttack);
 }
 
+
+
+void Game::spawnPlayer(PlayerType type, int x, int y) {
+
+	if (pCharacters.size() == 3 ) return; //No more than 4 pcs
+	std::vector<ActionEvent*> playerActions{};
+
+	switch (type) {
+	case PlayerType::armyfighter:
+		playerActions = {
+			new AttackActionEvent("Q. Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5, 5, "plasma"),
+			new ActionEvent("W. Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,0,0),
+			new ActionEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
+			new MoveActionEvent("R. Move", "Move to a specific position.",pActionMng)
+		};
+	}
+
+
+	pCharacters.push_back(std::make_shared<Player>(new UnitAnimations(pTexMng->textureTable["coolarmymove"]), UnitType::player, type, playerActions, 25, 25, x, y));
+
+	pUnitMng->unitList.emplace(pUnitMng->unitList.begin(), pCharacters.back().get());
+
+	pCharacters.back()->nickName = pUnitMng->getRandomName();
+
+	playerVector.push_back(pCharacters.back().get());
+}
+
 void Game::update() {
 	int mousex, mousey = 0;
 
 	std::vector<Unit*> visibleUnits;
+	int oldX = pCharacters[activeP]->x;
+	int oldY = pCharacters[activeP]->y;
+
 	
 	window.setMouseCursorVisible(false);
 
@@ -145,37 +167,242 @@ void Game::update() {
 
 	bool aiTurn = false;
 
+	sf::Event event {};
+
 	// Main Game Loop
 	while (window.isOpen())
 	{
-		aiTurn = false;
+		if (!pUiMng->isAnimating())
+		{
+			aiTurn = false;
 
-		// Selects whether player or AI makes next turn
-		if (state == GameState::combat) {
-			Unit* npc = currentCombat->getFirstUnit();
+			// Selects whether player or AI makes next turn
+			if (state == GameState::combat) {
+				
+				pGuiMng->updateCombatQueue(*currentCombat);
+				
+				Unit* npc = currentCombat->getFirstUnit();
+				
+				//for (int i = 0; i < pCharacters.size(); i++) {
+				//	currentCombat->addUnitsToCombat(pLoS->getVisibleUnits(pLvlMng, pUnitMng, pCharacters[i].get()));	//adds all visible enemies to the combat
+				//}
 
-			if (!isPlayer(playerVector, npc)) {
-				auto events = npc->aiComponent->runAI(currentCombat, &pLvlMng->createGraph(), &pUnitMng->pathFinder, npc);
-				aiTurn = true;
-				currentCombat->updateListOfUnits();
-				pGuiMng->handleCombatEvents(events, playerVector);
+				if (!isPlayer(playerVector, npc)) {
+					
+					bool skip = false;
+					auto events = npc->aiComponent->runAI(currentCombat, &pLvlMng->createGraph(), &pUnitMng->pathFinder, npc);
+
+					aiTurn = true;
+
+					for (auto& ev : events) {
+						if (ev.type == CombatEventType::Skip || ev.type == CombatEventType::NotValid) {
+							currentCombat->skipTurn();
+							skip = true;
+							continue;
+						}
+					}
+
+					if (skip)
+						continue;
+
+					/*if (events[0].type == CombatEventType::Skip) {
+						currentCombat->skipTurn();
+						continue;
+					}*/
+
+					pGuiMng->handleCombatEvents(events, playerVector);
+					currentCombat->updateListOfUnits();
+					currentCombat->cycleUnitModifiers(); // A turn passed -> reduce duration of mods by 1
+					currentCombat->replenishUnitAP();
+				}
+			}
+
+			while (window.pollEvent(event))
+			{
+				if (aiTurn) break;
+
+				if (inputState == InputState::normal) {
+
+					if (event.type == sf::Event::Closed)//|| sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+						window.close();
+
+					if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space)
+						if (currentCombat != nullptr) currentCombat->listUnits();
+
+
+					if (state == GameState::combat) {
+
+						if (event.type == sf::Event::KeyPressed) {
+							int i = 0;
+
+							if (event.key.code == sf::Keyboard::Q) i = 0;
+							else if (event.key.code == sf::Keyboard::W) i = 1;
+							else if (event.key.code == sf::Keyboard::E) i = 2;
+							else if (event.key.code == sf::Keyboard::R) i = 3;
+							else continue;
+
+							getGUIevent(activeP, i);
+						}
+					}
+
+					if (!sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.type == sf::Event::MouseMoved)
+					{
+						mousex = sf::Mouse::getPosition(window).x;
+						mousey = sf::Mouse::getPosition(window).y;
+					}
+
+					if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.type == sf::Event::MouseMoved)
+					{
+						pUiMng->setX(pUiMng->getX() + event.mouseMove.x - mousex);
+						pUiMng->setY(pUiMng->getY() + event.mouseMove.y - mousey);
+						mousex = event.mouseMove.x;
+						mousey = event.mouseMove.y;
+					}
+
+					//Move around in overworld
+					if (state == GameState::exploration) {
+
+						if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Button::Right)
+						{
+							int xPos = sf::Mouse::getPosition(window).x - pUiMng->getX();
+							int yPos = sf::Mouse::getPosition(window).y - pUiMng->getY();
+							oldX = pCharacters[activeP]->x;
+							oldY = pCharacters[activeP]->y;
+							std::vector<Node> path = pUnitMng->moveUnit(xPos, yPos, pCharacters[activeP].get());
+							if (path.size() != 0)
+							{
+								Unit* current = pCharacters[activeP].get();
+								pAnimationMng->registerMovement(current->sprite, new DrawableUnit{ (float)current->x, (float)current->y, current->sprite->sprite }, path, 0.5);
+								pGuiMng->updatePlayerPositionMap(oldX, oldY, pCharacters[activeP]->x, pCharacters[activeP]->y);
+								visibleUnits = pLoS->getVisibleUnits(pLvlMng, pUnitMng, pCharacters[activeP].get());
+							}
+							//pGuiMng->displayMessage("Player moved", sf::Color{255,0,0,255});
+						}
+					}
+				}
+				// This state is entered when the player has selected an ability. Lets the player choose a target location to use the ab. on
+				else if (inputState == InputState::WaitingForActionInput) {
+
+					if (event.type == sf::Event::Closed)
+						window.close();
+
+					if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
+						delete userActionInput;
+						userActionInput = nullptr;
+						cursor.setTexture(cursorRegular);
+						inputState = InputState::normal;
+					}
+
+					else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Button::Left)
+					{
+						bool actionTookPlace = true;
+
+						int xPos = sf::Mouse::getPosition(window).x - pUiMng->getX();
+						int yPos = sf::Mouse::getPosition(window).y - pUiMng->getY();
+						//click pos are screen space coordinates
+
+						auto wasValidAction = updateActionManager(ActionManagerInput(userActionInput->playerIndex, userActionInput->actionIndex, xPos, yPos));
+
+						// If this occurs the player either selected an Action that is not in range or costs more AP than he has
+						// In this case we continue wait for valid input
+						if (!std::get<0>(wasValidAction)) {
+							pGuiMng->displayMessage(std::get<1>(wasValidAction), sf::Color{ 255,0,0,255 });
+							actionTookPlace = false;
+						}
+						delete userActionInput;
+						userActionInput = nullptr;
+						cursor.setTexture(cursorRegular);
+						inputState = InputState::normal;
+
+						//Update the GUI with player ap replenishments, without popups
+						if (actionTookPlace) {
+							auto gains = currentCombat->replenishUnitAP();
+							std::vector<CombatEvent> apEvents{};
+							for (auto gainEv : gains) {
+
+								CombatEvent e{ std::get<1>(gainEv), CombatEventType::AP };
+
+								// Since the ActionManager returns loses as positive values I implemented the GUI to asume updates as values
+								// So for displaying gains we need to currently send the negative value (gui adds --2 for example)
+								e.setAPChange(-std::get<0>(gainEv));
+
+								apEvents.push_back(e);
+							}
+
+							currentCombat->updateListOfUnits();
+							currentCombat->cycleUnitModifiers(); // A turn passed -> reduce duration of mods by 1
+
+						//pGuiMng->handleCombatEvents(apEvents, playerVector, false);
+						}
+					}
+				}
+
+				pGuiMng->handleEvent(event);
+
+				//One or more enemies are in range and no combat is happening right now -> enter new combat
+				if (visibleUnits.size() > 1 && currentCombat == nullptr) {
+
+					bool enemyAround = false;
+
+					for (auto& u : visibleUnits) { // Have to check if only other player is around because the line of sight dies if i try to exclude players from it
+						if (u->type != UnitType::player)
+							enemyAround = true;
+					}
+
+					if (!enemyAround) continue;
+
+					for (int i = 1; i < playerVector.size(); i++)
+					{
+						playerVector[i]->x = oldX;//playerVector[0]->x;
+						playerVector[i]->y = oldY;// playerVector[0]->y;
+						sf::Vector2i newPos = pLvlMng->findNextFreeTile(playerVector[0]->x, playerVector[0]->y);
+						std::vector<Node> path = pUnitMng->moveUnit(newPos.x, newPos.y, playerVector[i]);
+						pAnimationMng->registerMovement(playerVector[i]->sprite, new DrawableUnit{ (float)playerVector[0]->x, (float)playerVector[0]->y, playerVector[i]->sprite->sprite }, path, 0.5);
+						visibleUnits.push_back(playerVector[i]);
+					}
+
+					state = GameState::combat;
+					currentCombat = new CombatState(visibleUnits);
+
+					currentCombat->updateListOfUnits();
+
+					pActionMng->setCombatState(currentCombat);
+					pGuiMng->initCombatGUI(*currentCombat, playerVector, pLvlMng->map);
+
+				}
+
+				// Combat is over, go back to overworld exploration
+				if (state == GameState::combat && currentCombat->isDone()) {
+					for (int i = 1; i < playerVector.size(); i++)
+					{
+						//std::vector<Node> path = pUnitMng->moveUnit(playerVector[0]->x, playerVector[0]->y, playerVector[i]);
+						//std::cout << path.size() << std::endl;
+						//pAnimationMng->registerMovement(playerVector[i]->sprite, new DrawableUnit{ (float)playerVector[i]->x, (float)playerVector[i]->y, playerVector[i]->sprite->sprite }, path, 0.5);
+						pLvlMng->setOccupied(playerVector[i]->x, playerVector[i]->y, false);
+						playerVector[i]->x = -100;
+						playerVector[i]->y = -100;
+					}
+
+					pGuiMng->returnToExploration(playerVector.size());
+					delete currentCombat;
+					currentCombat = nullptr;
+					visibleUnits.clear();
+					state = GameState::exploration;
+
+				}
 			}
 		}
-
-		sf::Event event;
-		while (window.pollEvent(event))
+		//this is so mouse camera controls still work while animations are going on
+		else
 		{
-			if (aiTurn) break;
-
-			if (inputState == InputState::normal) {
-	
-				if (event.type == sf::Event::Closed )//|| sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
-					window.close();
+			while (window.pollEvent(event))
+			{
 				if (!sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.type == sf::Event::MouseMoved)
 				{
 					mousex = sf::Mouse::getPosition(window).x;
 					mousey = sf::Mouse::getPosition(window).y;
 				}
+
 				if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.type == sf::Event::MouseMoved)
 				{
 					pUiMng->setX(pUiMng->getX() + event.mouseMove.x - mousex);
@@ -183,105 +410,8 @@ void Game::update() {
 					mousex = event.mouseMove.x;
 					mousey = event.mouseMove.y;
 				}
-
-				//Move around in overworld
-				if (state == GameState::exploration) {
-
-					if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Button::Right)
-					{
-						int xPos = sf::Mouse::getPosition(window).x - pUiMng->getX();
-						int yPos = sf::Mouse::getPosition(window).y - pUiMng->getY();
-						int oldX = p->x;
-						int oldY = p->y;
-						if (pUnitMng->moveUnit(xPos, yPos, p))
-						{
-							pGuiMng->updatePlayerPositionMap(oldX, oldY, p->x, p->y);
-							visibleUnits = pLoS->getVisibleUnits(pLvlMng, pUnitMng);
-						}
-						//pGuiMng->displayMessage("Player moved", sf::Color{255,0,0,255});
-					}
-				}
-			}
-			// This state is entered when the player has selected an ability. Lets the player choose a target location to use the ab. on
-			else if (inputState == InputState::WaitingForActionInput) {
-
-				if (event.type == sf::Event::Closed)
-					window.close();
-
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
-					delete userActionInput;
-					userActionInput = nullptr;
-					cursor.setTexture(cursorRegular);
-					inputState = InputState::normal;
-				}
-
-				if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Button::Left)
-				{
-					bool actionTookPlace = true;
-
-					int xPos = sf::Mouse::getPosition(window).x - pUiMng->getX();
-					int yPos = sf::Mouse::getPosition(window).y - pUiMng->getY();
-					//click pos are screen space coordinates
-					
-					auto wasValidAction = updateActionManager(ActionManagerInput(userActionInput->playerIndex, userActionInput->actionIndex, xPos, yPos));
-					
-					// If this occurs the player either selected an Action that is not in range or costs more AP than he has
-					// In this case we continue wait for valid input
-					if (!std::get<0>(wasValidAction)) { 
-						pGuiMng->displayMessage(std::get<1>(wasValidAction), sf::Color{ 255,0,0,255 });
-						actionTookPlace = false;
-					}
-
-					delete userActionInput;
-					userActionInput = nullptr;
-					cursor.setTexture(cursorRegular);
-					inputState = InputState::normal;
-
-					//Update the GUI with player ap replenishments, without popups
-					if (actionTookPlace) {
-						auto gains = currentCombat->replenishUnitAP();
-						std::vector<CombatEvent> apEvents{};
-						for (auto gainEv : gains) {
-
-							CombatEvent e{ std::get<1>(gainEv), CombatEventType::AP };
-
-							// Since the ActionManager returns loses as positive values I implemented the GUI to asume updates as values
-							// So for displaying gains we need to currently send the negative value (gui adds --2 for example)
-							e.setAPChange(-std::get<0>(gainEv));
-
-							apEvents.push_back(e);
-						}
-
-						pGuiMng->handleCombatEvents(apEvents, playerVector, false);
-					}
-				}
 			}
 		}
-
-		pGuiMng->handleEvent(event);
-
-		//One or more enemies are in range and no combat is happening right now -> enter new combat
-		if (visibleUnits.size() > 1 && currentCombat == nullptr) {
-		
-			//visibleUnits.push_back(p);
-			state = GameState::combat;
-			currentCombat = new CombatState(visibleUnits);
-			pActionMng->setCombatState(currentCombat);
-			pGuiMng->initCombatGUI(*currentCombat, playerVector, pLvlMng->map);
-
-		}
-
-		// Combat is over, go back to overworld exploration
-		if (state == GameState::combat && currentCombat->isDone()) {
-
-			pGuiMng->returnToExploration(playerVector.size());
-			delete currentCombat;
-			currentCombat = nullptr;
-			visibleUnits.clear();
-			state = GameState::exploration;
-
-		}
-
 		//Camera movement
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 			pUiMng->setY(pUiMng->getY() + 1);
@@ -315,7 +445,13 @@ void Game::update() {
 
 		window.clear();
 		cursor.setPosition(static_cast<sf::Vector2f>(sf::Mouse::getPosition(window)));
+		
+		pAnimationMng->update(frameTime);
+		pUnitMng->update(frameTime);
 		pUiMng->setUnits(pUnitMng->getUnits());
+		pUiMng->setItems(pAnimationMng->getItems());
+		pUiMng->setAnimations(pAnimationMng->getAnimations());
+		pUiMng->setMovement(pAnimationMng->getMovement());
 		pUiMng->drawEverything(&window);
 		pGuiMng->draw();
 		window.draw(cursor);

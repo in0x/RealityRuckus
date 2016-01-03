@@ -10,13 +10,15 @@ class AIComponent;
 class ActionEvent {
 public:
 
-	ActionEvent(std::string name, std::string description, ActionManager* actionmanager, int cost, int range);
+	ActionEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost, float damage = 0, std::string animation = "");
 
 	std::string name;
 	std::string description;
+	std::string animation;
 
 	int range;
 	int cost;
+	float damage;
 
 	ActionManager* actionmanager;
 
@@ -29,14 +31,27 @@ public:
 
 	MoveActionEvent(std::string name, std::string description, ActionManager* actionmanager);
 
-	virtual std::vector<CombatEvent> doAction(Unit* sender, int x, int y);
+	//Add the override key word to overriden functions to show that you are replacing a function, not declaring a new one
+	virtual std::vector<CombatEvent> doAction(Unit* sender, int x, int y) override;
 };
 
 class AttackActionEvent : public ActionEvent {
 
 public:
 
-	AttackActionEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost);
+	AttackActionEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost, float damage, std::string animation = "");
 
-	virtual std::vector<CombatEvent> doAction(Unit* sender, int x, int y);
+	virtual std::vector<CombatEvent> doAction(Unit* sender, int x, int y) override;
 };
+
+class APchangeActionEvent : public ActionEvent {
+
+public:
+
+	APchangeActionEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost, float ap);
+
+	virtual std::vector<CombatEvent> doAction(Unit* sender, int x, int y) override;
+
+
+};
+

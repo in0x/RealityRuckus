@@ -8,7 +8,9 @@ enum CombatEventType {
 	None = 0,
 	Move = 1,
 	AP = 2,
-	HP = 4
+	HP = 4,
+	UnitDied = 8,
+	Skip 
 };
 
 class CombatEvent {

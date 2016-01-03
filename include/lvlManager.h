@@ -27,6 +27,8 @@ public:
 	sf::RenderTexture unitRenderTex;
 	sf::Vector2<int> findNextSpot(int, int);
 
+	sf::Vector2i findNextFreeTile(int x, int y);
+
 	lvlManager();
 	~lvlManager();
 

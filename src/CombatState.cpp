@@ -5,7 +5,12 @@
 struct CompareUnitApPtr
 {
 	bool operator()(Unit* lhs, Unit* rhs) {
-		return lhs->currAP > rhs->currAP;
+		//return (lhs->currAP / lhs->maxAP) > (rhs->currAP / rhs->maxAP);
+
+		if ((lhs->currAP / lhs->maxAP) == (rhs->currAP / rhs->maxAP))
+			return lhs->currAP > rhs->currAP;
+
+		return (lhs->currAP / lhs->maxAP) > (rhs->currAP / rhs->maxAP);
 	}
 } unitComparer;
 
@@ -15,12 +20,34 @@ CombatState::CombatState(std::vector<Unit*> combatUnitPtrs) {
 	std::sort(unitsInCombat.begin(), unitsInCombat.end(), unitComparer); 
 }
 
+void CombatState::cycleUnitModifiers() {
+	for (auto& unit : unitsInCombat)
+		unit->cycleModifiers();
+}
+
+void CombatState::skipTurn() {
+	Unit* first = getFirstUnit();
+	Unit* second;
+
+	for (auto& unit : unitsInCombat)
+		if (unit->type == UnitType::player)
+			second = unit;
+	
+	unitsInCombat[0] = second;
+	unitsInCombat[1] = first;
+}
+
+std::ostream& operator<<(std::ostream& os, const Unit& unit) {
+	os << unit.nickName + ": ( Type = " + unit.name + " ) (AP: " + std::to_string(unit.currAP) + " ) " + " (HP: " + std::to_string(unit.currAP) + " ) " + " ( x: " + std::to_string(unit.x) + " , y: " + std::to_string(unit.y) + " )";
+	return os;
+}
+
 
 void CombatState::updateListOfUnits() {
 	std::sort(unitsInCombat.begin(), unitsInCombat.end(), unitComparer);
 	std::vector<Unit*> unitsToRemove = std::vector<Unit*>();
 	for (auto unit : unitsInCombat) {
-		if (unit->currHP <= 0) {
+		if (unit->currHP <= 0.99) {
 			unitsToRemove.push_back(unit);
 			
 		}
@@ -30,9 +57,6 @@ void CombatState::updateListOfUnits() {
 		removeUnit(unit);
 	}
 
-	/*for (auto unit : unitsInCombat)
-		std::cout << "Unit: ( Type = " + std::to_string(unit->type) + " ) (AP: " + std::to_string(unit->currAP) + " ) " + " ( x: " + std::to_string(unit->x) + " , y: " + std::to_string(unit->y) + " )" << std::endl;
-	std::cout << "\n" << std::endl;*/
 }
 
 Unit* CombatState::getFirstUnit() {
@@ -40,12 +64,16 @@ Unit* CombatState::getFirstUnit() {
 }
 
 bool CombatState::isDone() {
-	return unitsInCombat.size() == 1;
+	for (int i = 0; i < unitsInCombat.size(); i++) {
+		if (unitsInCombat[i]->type != player)
+			return false;
+	}
+	return true;
 }
 
 void CombatState::listUnits() {
-	for (auto& unit : unitsInCombat)
-		std::cout << "Unit at: (x: " << unit->x << " | y: " << unit->y << ")" << std::endl;
+	for (auto unit : unitsInCombat)
+		std::cout << *unit << std::endl; std::cout << "\n" << std::endl;
 }
 
 void CombatState::removeUnit(Unit* unitToRemove) {
@@ -82,4 +110,24 @@ Unit* CombatState::findUnit(int x, int y) {
 		if (unit->x == x && unit->y == y)
 			return unit;
 	return nullptr;
+}
+
+void CombatState::addUnitsToCombat(std::vector<Unit*> allVisibleUnits) {
+	for (int i = 0; i < allVisibleUnits.size(); i++) {
+		for (int j = 0; j < unitsInCombat.size(); j++) {
+			if (allVisibleUnits.size() > 0) {
+				if (allVisibleUnits[i]->x == unitsInCombat[j]->x && allVisibleUnits[i]->y == unitsInCombat[j]->y) {
+					allVisibleUnits.erase(allVisibleUnits.begin() + i);
+					i--;
+					break;
+				}
+			}
+		}
+	}
+	if (allVisibleUnits.size() > 0) {
+		for (int i = 0; i < allVisibleUnits.size(); i++) {
+			if(allVisibleUnits[i]->type != player)
+				unitsInCombat.push_back(allVisibleUnits[i]);
+		}
+	}
 }

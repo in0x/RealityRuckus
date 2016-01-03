@@ -213,7 +213,6 @@ void lvlManager::testTileGen(TextureManager* texMng, sf::RenderWindow* window_pt
     	window_ptr->clear();
     	window_ptr->draw(it->sprite);
     	window_ptr->display();
-    	std::this_thread::sleep_for (std::chrono::seconds(1));
     }
 }
 
@@ -255,5 +254,33 @@ sf::Vector2<int> lvlManager::findNextSpot(int w, int h){
 		tries++;
 	} while (!valid);
 	sf::Vector2<int> ret = sf::Vector2<int>(x, y);
+	return ret;
+}
+
+sf::Vector2i lvlManager::findNextFreeTile(int x, int y)
+{
+	int leeway = 4;
+	sf::Vector2i ret = { -1,-1 };
+	float dist = 64;
+	for (int fx = x-leeway; fx < x+leeway; fx++) {
+		for (int fy = y-leeway; fy < y+leeway; fy++) {
+
+			if (fx == x && fy == y)
+				continue;
+
+			if (fx > 0 && fy > 0 && fx < 30 && fy < 30) {
+				if (map[fx][fy].accessible == true && map[fx][fy].occupied == false) {
+					float newdist = sqrt(pow(x - fx, 2) + pow(y - fy, 2));
+					if (newdist < dist)
+					{
+						dist = newdist;
+						ret = { fx, fy };
+						if (dist == 1)
+							return ret;
+					}
+				}
+			}
+		}
+	}
 	return ret;
 }

@@ -5,9 +5,13 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
 
+enum class PlayerType {
+	armyfighter
+};
 
 class Player : public Unit {
 public:
-	Player(TextureManager* texMng, sf::Sprite s, UnitType type, int AP = 20, int HP = 30, int xPos = 0, int yPos = 15);
+	Player(UnitAnimations* anim, UnitType type, PlayerType pType, std::vector<ActionEvent*> actions, int AP = 20, int HP = 25, int xPos = 0, int yPos = 15);
+	PlayerType playerType;
 	~Player();
 };

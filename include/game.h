@@ -11,6 +11,7 @@
 #include "Event.h"
 #include "GuiManager.h"
 #include "ActionManagerInput.h"
+#include "AnimationManager.h"
 #include "AIComponent.h"
 #include <memory>
 
@@ -25,14 +26,18 @@ public:
 	void update();
 	void end();
 	void getGUIevent(int playerIndex, int abilityIndex);
+	void spawnPlayer(PlayerType type, int x, int y);
+	void setActivePlayer(int index);
 
 	sf::Font* gameFont = nullptr;
+
+	const int WINDOW_WIDTH = 1920;
+	const int WINDOW_HEIGHT = 1080;
 	
 private: 
 	enum class InputState {normal, WaitingForActionInput};
 
-	const int WINDOW_WIDTH = 1920;
-	const int WINDOW_HEIGHT = 1080;
+	int activeP = 0;
 
 	sf::RenderWindow window;
 	sf::Clock frameClock;
@@ -51,10 +56,9 @@ private:
 	GUImanager* pGuiMng = nullptr;
 	CombatState* currentCombat = nullptr;
 	ActionManagerInput* userActionInput = nullptr;
+	AnimationManager* pAnimationMng = nullptr;
 	AIFactory aiFactory = {};
 
-	Player* p;
-	
 	GameState state;
 	InputState inputState = InputState::normal;
 
@@ -62,4 +66,6 @@ private:
 	
 	std::tuple<bool, std::string> updateActionManager(ActionManagerInput inputEvent);
 	
+	std::vector<std::shared_ptr<Player>> pCharacters{};
+
 };

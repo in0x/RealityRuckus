@@ -19,12 +19,15 @@ public:
 
 	void updateListOfUnits();
 	void listUnits();
+	void cycleUnitModifiers();
+	void addUnitsToCombat(std::vector<Unit*>);
+	void skipTurn();
 
 	bool isDone();
 
 	std::vector<Unit*> unitsInCombat;
 	std::vector<std::tuple<int, Unit*>> replenishUnitAP();
-
+	
 private:
 
 	void removeUnit(Unit* unitToRemove);

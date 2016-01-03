@@ -2,7 +2,12 @@
 #include "player.h"
 
 
-Player::Player(TextureManager* texMng, sf::Sprite s, UnitType type, int AP, int HP, int xPos, int yPos) : Unit(AP, HP, s, texMng, nullptr, xPos, yPos, type) {}
+Player::Player(UnitAnimations* anim, UnitType type, PlayerType pType, std::vector<ActionEvent*> actions, int AP, int HP, int xPos, int yPos) : Unit(AP, HP, anim, nullptr, xPos, yPos, type)
+{ 	
+	playerType = pType;
+
+	learnedActions = actions;
+}
 
 Player::~Player() {}
 

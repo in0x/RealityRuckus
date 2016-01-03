@@ -41,37 +41,33 @@ void UIManager::setY(float newY)
 void UIManager::setTerrain(sf::Sprite t)
 {
 	terrain = t;
-	//scale = t.getScale().x;
-	//terrain.setScale(scale, -scale);
-	//terrain.setOrigin(0, terrain.getLocalBounds().height);
 }
 
 void UIManager::setUnits(std::vector<DrawableUnit> v)
 {
 	units = v;
-	//scale = t.getScale().x;
-	//units.setScale(scale, -scale);
-	//units.setOrigin(0, units.getLocalBounds().height);
+}
+
+void UIManager::setItems(std::vector<DrawableItem> i)
+{
+	items = i;
+}
+
+void UIManager::setAnimations(std::vector<DrawableAnimation> i)
+{
+	animations = i;
+}
+
+void UIManager::setMovement(std::vector<DrawableMovement> i)
+{
+	movement = i;
 }
 
 sf::Sprite* UIManager::getUI()
 {
 	terrain.setPosition(x, y);
-	//units.setPosition(x, y);
 	terrain.setScale(scale, -scale);
-	//units.setScale(scale, -scale);
 	terrain.setOrigin(0, terrain.getLocalBounds().height);
-	//sf::RenderTexture texture;
-	//texture.create(3840, 3840);
-	//texture.draw(terrain);
-	
-	//texture.draw(units);
-	//outtexture = texture.getTexture();
-	//outsprite.setTexture(outtexture);
-	//outsprite.setPosition(x, y);
-	//outsprite.setScale(scale, -scale);
-	
-	//return &outsprite;
 	return &terrain;
 }
 
@@ -80,16 +76,63 @@ void UIManager::drawEverything(sf::RenderWindow* window)
 {
 	window->draw(*getUI());
 	drawUnits(window);
+	drawItems(window);
+	drawAnimations(window);
+	drawMovement(window);
 	//window->draw(getUnits());
 }
 
 void UIManager::drawUnits(sf::RenderWindow* window)
 {
 	for (std::vector<DrawableUnit>::iterator it = units.begin(); it != units.end(); ++it) {
-		sf::Sprite s = *it->sprite;
-		s.setPosition((it->x * 128)+x, (it->y * 128)+y);
+		bool moving = false;
+		for (auto move : movement)
+		{
+			if (move.sprite->sprite == it->sprite)
+			{
+				moving = true;
+				break;
+			}
+		}
+		if (!moving)
+		{
+			AnimatedSprite s = *it->sprite;
+			s.setPosition((it->x * 128) + x, (it->y * 128) + y);
+			window->draw(s);
+		}
+	}
+}
+
+void UIManager::drawItems(sf::RenderWindow* window)
+{
+	for (std::vector<DrawableItem>::iterator it = items.begin(); it != items.end(); ++it) {
+		sf::Sprite s = it->sprite;
+		s.setPosition((it->pos.x * 128) + x, (it->pos.y * 128) + y);
 		window->draw(s);
 	}
+}
+
+void UIManager::drawAnimations(sf::RenderWindow* window)
+{
+	for (std::vector<DrawableAnimation>::iterator it = animations.begin(); it != animations.end(); ++it) {
+		AnimatedSprite s = it->sprite;
+		s.setPosition((it->pos.x * 128) + x, (it->pos.y * 128) + y);
+		window->draw(s);
+	}
+}
+
+void UIManager::drawMovement(sf::RenderWindow* window)
+{
+	for (std::vector<DrawableMovement>::iterator it = movement.begin(); it != movement.end(); ++it) {
+		AnimatedSprite s = *it->unit->sprite;
+		s.setPosition((it->unit->x * 128) + x, (it->unit->y * 128) + y);
+		window->draw(s);
+	}
+}
+
+bool UIManager::isAnimating()
+{
+	return items.size() + animations.size() + movement.size();	//If there is ANY animation going on -> true
 }
 
 UIManager::~UIManager()

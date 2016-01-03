@@ -1,8 +1,9 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include "AnimatedSprite.hpp"
 
 struct DrawableUnit {
-	int x; 
-	int y;
-	sf::Sprite* sprite;
+	float x; 
+	float y;
+	AnimatedSprite* sprite;
 };

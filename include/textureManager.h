@@ -16,5 +16,6 @@ public:
 	std::vector<std::string> units;
 	std::vector<std::string> floors;
 	std::vector<std::string> walls;
+	std::vector<std::string> items;
 	std::unordered_map<std::string, sf::Texture> textureTable;
 };

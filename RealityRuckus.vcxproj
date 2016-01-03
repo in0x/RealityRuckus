@@ -113,6 +113,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(TGUIROOT64)\lib;$(SFMLROOT64)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>sfml-system-d.lib;sfml-window-d.lib;sfml-graphics-d.lib;sfml-audio-d.lib;tgui-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>NotSet</ShowProgress>
     </Link>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
@@ -167,11 +168,13 @@
     <ClInclude Include="include\AIComponent.h" />
     <ClInclude Include="include\AnimatedSprite.hpp" />
     <ClInclude Include="include\Animation.hpp" />
+    <ClInclude Include="include\AnimationManager.h" />
     <ClInclude Include="include\aStarSearch.h" />
     <ClInclude Include="include\block.h" />
     <ClInclude Include="include\CombatEvent.h" />
     <ClInclude Include="include\CombatState.h" />
     <ClInclude Include="include\dirent.h" />
+    <ClInclude Include="include\drawableItem.h" />
     <ClInclude Include="include\drawableUnit.h" />
     <ClInclude Include="include\Event.h" />
     <ClInclude Include="include\game.h" />
@@ -189,6 +192,7 @@
     <ClInclude Include="include\tile.h" />
     <ClInclude Include="include\UIManager.h" />
     <ClInclude Include="include\Unit.h" />
+    <ClInclude Include="include\UnitAnimations.hpp" />
     <ClInclude Include="include\UnitManager.h" />
     <ClInclude Include="include\unitType.h" />
     <ClInclude Include="include\WeightedGraph.h" />
@@ -200,6 +204,7 @@
     <ClCompile Include="src\AIComponent.cpp" />
     <ClCompile Include="src\AnimatedSprite.cpp" />
     <ClCompile Include="src\Animation.cpp" />
+    <ClCompile Include="src\AnimationManager.cpp" />
     <ClCompile Include="src\aStarSearch.cpp" />
     <ClCompile Include="src\CombatState.cpp" />
     <ClCompile Include="src\EncryptedInputStream.cpp" />
@@ -216,6 +221,7 @@
     <ClCompile Include="src\tile.cpp" />
     <ClCompile Include="src\UIManager.cpp" />
     <ClCompile Include="src\Unit.cpp" />
+    <ClCompile Include="src\UnitAnimations.cpp" />
     <ClCompile Include="src\UnitManager.cpp" />
     <ClCompile Include="src\WeightedGraph.cpp" />
   </ItemGroup>

@@ -21,24 +21,23 @@ public:
 	std::vector<DrawableUnit> getUnits();
 	std::vector<Unit*> unitList;
 	 
-	//
-	std::vector<ActionEvent*> actions;
-	//
-
 	Player* player;
 	aStarSearch pathFinder;
-	
+	ActionManager* pActionMng;
+
 	sf::SoundBuffer dieBuffer;
 	sf::Sound die;
 
-	int moveUnit(int x, int y, Unit* unit);
+	std::vector<Node> moveUnit(int x, int y, Unit* unit);
 
-	bool spawnUnit(UnitType, int, int, bool);
+	Unit* spawnUnit(UnitType, int, int, bool);
 
-	void isDead(int);
-	void damageUnit(Unit * unit, int hp);
+	bool isDead(int);
+	void update(sf::Time time);
+	bool damageUnit(Unit * unit, float hp);
 	void setPlayer(Player* p);
 	void removeAP(Unit* unit, int ap);
+	std::string getRandomName();
 
 private:
 
@@ -46,7 +45,6 @@ private:
 	TextureManager* tex = nullptr;
 	SoundManager* snd = nullptr;
 	AIFactory* aiFactory;
+	std::vector<std::string> nameList{};
 	void removeUnit(Unit*);
-
-	/* THIS IS FOR TEST PURPOSES ONLY, DONT DO THIS */
 };

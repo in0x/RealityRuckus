@@ -16,7 +16,7 @@ public:
 	int playerIndex;
 };
 
-enum class ActionMenuEnabled {player0,player1,player2,player3,none};
+enum class ActionMenuEnabled {player0 = 0,player1 = 1,player2 = 2,player3 = 3,none};
 
 class Game;
 
@@ -33,6 +33,8 @@ public:
 	void updatePlayerPositionMap(int oldX, int oldY, int newX, int newY);
 	void updateWindowOffset(int x, int y, int unitsInCombat);
 	void displayMessage(std::string message, sf::Color color);
+	void setActionMenuEnabled(ActionMenuEnabled, tgui::Panel::Ptr parent);
+	void updateCombatQueue(CombatState& state);
 
 private:
 	tgui::Panel::Ptr explorationGUI = std::make_shared<tgui::Panel>();
@@ -46,6 +48,7 @@ private:
 
 	ActionMenuEnabled actionMenuEnabled = ActionMenuEnabled::none;
 	Game* pGameObject = nullptr;
+	int qOffset = 0;
 
 	struct EnemyPanel {
 		Unit* unit;
@@ -54,11 +57,18 @@ private:
 		sf::Vector2i originalPos;
 	};
 
-	std::vector<tgui::Widget::Ptr> explorationWidgets = std::vector<tgui::Widget::Ptr>();
-	std::vector<tgui::Widget::Ptr> combatWidgets = std::vector<tgui::Widget::Ptr>();
-	std::vector<EnemyPanel> enemyInfos = std::vector<EnemyPanel>();
+	struct QueuePanels {
+		Unit* unit;
+		tgui::Widget::Ptr profile;
+		tgui::Widget::Ptr picture;
+		tgui::Widget::Ptr info;
+	};
 
-	void setActionMenuEnabled(ActionMenuEnabled);
+	std::vector<tgui::Widget::Ptr> explorationWidgets {};
+	std::vector<tgui::Widget::Ptr> combatWidgets {};
+	std::vector<EnemyPanel> enemyInfos {};
+	std::vector<QueuePanels> qPanels {};
+
 	void createPlayerProfile(int playerIndex, Unit* player, tgui::Panel::Ptr parent, bool combat = false);
 	void createMap(std::array<std::array<Tile, 30>, 30> map, std::vector<PlayerCell> players, tgui::Panel::Ptr parent);
 	void createProfilePicture(int playerIndex, Unit* player, sf::Vector2f profilePos, tgui::Panel::Ptr parent);
@@ -70,4 +80,6 @@ private:
 	void displayUnitChangeText(CombatEvent& event);
 	void createEnemyInfo(Unit* unit, int unitIndex);
 	void updateEnemyPanelsPos(int amount);
+	void updateEnemyPanelInfo(Unit* unit);
+	void createCombatQueue(CombatState& state);
 };

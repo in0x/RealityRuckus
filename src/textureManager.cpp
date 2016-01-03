@@ -10,6 +10,7 @@ TextureManager::TextureManager() {
 	walls = std::vector<std::string>();
 	floors = walls = std::vector<std::string>();
 	units = walls = std::vector<std::string>();
+	items = walls = std::vector<std::string>();
 	textureTable = std::unordered_map<std::string, sf::Texture>();
 	hasLoaded = false;
 }
@@ -55,6 +56,18 @@ void TextureManager::createTextures() {
 
 			textureTable.emplace(name, texture);
 	}
+
+	for (std::vector<std::string>::iterator it = items.begin(); it != items.end(); ++it) {
+		std::string name = *it;
+		texture.loadFromFile("Sprites/Items/" + name);
+		//std::cout << "Sprites/Floors/" << name << std::endl;
+
+		int dotPos = name.find_last_of('.');
+		name.erase(dotPos, name.length() - dotPos);
+
+
+		textureTable.emplace(name, texture);
+	}
 }
 
 void TextureManager::getFiles() {
@@ -92,4 +105,16 @@ void TextureManager::getFiles() {
 		closedir(curDir);
 	} else 
 		std::cout << "WARNING: Could not get Directory \"Sprite/Floors\" " << std::endl;
+
+	curDir = opendir("Sprites/Items");
+	if (curDir) {
+		while ((dirEntry = readdir(curDir))) {
+			std::string name(dirEntry->d_name);
+			if (name[0] != '.')
+				items.push_back(name);
+		}
+		closedir(curDir);
+	}
+	else
+		std::cout << "WARNING: Could not get Directory \"Sprite/Items\" " << std::endl;
 }

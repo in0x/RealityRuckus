@@ -58,6 +58,9 @@ void GUImanager::returnToExploration(int amountOfPlayers) {
 		profile.setOpacity(0.3f);
 	}
 
+	actionMenuEnabled = ActionMenuEnabled::player0;
+	pGameObject->setActivePlayer(0);
+
 	explorationGUI->show();
 }
 
@@ -67,15 +70,12 @@ void GUImanager::displayMessage(std::string message, sf::Color color = sf::Color
 	mes->setFont(font);
 	mes->setTextSize(40);
 	mes->setText(message);
+	mes->setPosition(0, 125);
 
 	mes->getRenderer()->setBackgroundColor(sf::Color(0, 0, 0, 80));
 	mes->getRenderer()->setTextColor(color);
 	mes->getRenderer()->setBorderColor(sf::Color::Transparent);
 	mes->getRenderer()->setPadding(tgui::Borders(30.f, 30.f));
-
-	//int posX = window->getPosition().x - mes->getSize().x / 2;
-	//int posY = window->getPosition().y * 0.7;
-	//mes->setPosition(posX, posY);
 
 	combatGUI->add(mes);
 	mes->show();
@@ -110,6 +110,8 @@ void GUImanager::displayUnitChangeText(CombatEvent& event) {
 }
 
 void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vector<Unit*>& playerVector, bool displayPopUps) {
+	if (events.size() == 0) return;
+
 	auto findPlayer = [](auto vec, auto unit) {
 		for (int i = 0; i < vec.size(); i++) {
 			if (vec[i] == unit)
@@ -142,37 +144,86 @@ void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vecto
 				break;
 			}
 		}
+		else {
+			if (e.type == CombatEventType::HP) {
+				updateEnemyPanelInfo(e.affected);
+			}
+		}
 
 		if (displayPopUps) displayUnitChangeText(e);
 	}
 }
 
+void GUImanager::updateEnemyPanelInfo(Unit* unit) {
+	for (auto& panel : enemyInfos) {
+		if (panel.unit == unit) {
+			std::string t = unit->nickName + "\n" + unit->name + "\n";
+
+			float health = unit->currHP / unit->maxHP;
+
+			if (health >= 0.99)
+				t += "In perfect shape.";
+			else if (health >= 0.75)
+				t += "Looks bruised.";
+			else if (health >= 0.5)
+				t += "Is visibly hurt";
+			else if (health >= 0.15)
+				t += "Heavy wounds are showing";
+			else
+				t += "Probably can't hold out much longer";
+
+			dynamic_cast<tgui::Label*>(panel.infoLabel.get())->setText(t);
+		}
+
+	}
+}
+
 void GUImanager::updateAPbar(int index, int change, bool combat) {
 	tgui::Widget::Ptr widget;
-	if (!combat)
+	tgui::Widget::Ptr text;
+
+	if (!combat) {
 		widget = explorationGUI->get("apBar" + std::to_string(index));
-	else
+		text = explorationGUI->get("apbarText" + std::to_string(index));
+	}
+
+	else {
 		widget = combatGUI->get("apBar" + std::to_string(index));
+		text = combatGUI->get("apbarText" + std::to_string(index));
+	}
 
 	if (widget == nullptr)
 		return;
 
 	auto apBar = dynamic_cast<tgui::ProgressBar*>(widget.get());
 	apBar->setValue(apBar->getValue() - change);
+
+	auto barText = dynamic_cast<tgui::Label*>(text.get());
+	barText->setText(std::to_string(apBar->getValue()) + " / " + std::to_string(apBar->getMaximum()) + "AP");
 }
 
-void GUImanager::updateHPbar(int index, int change, bool combat) {
+void GUImanager::updateHPbar(int index, int change, bool combat) { 
 	tgui::Widget::Ptr widget;
-	if (!combat)
+	tgui::Widget::Ptr text;
+
+	if (!combat) {
 		widget = explorationGUI->get("hpBar" + std::to_string(index));
-	else
+		text = explorationGUI->get("hpbarText" + std::to_string(index));
+	}
+
+	else {
 		widget = combatGUI->get("hpBar" + std::to_string(index));
+		text = combatGUI->get("hpbarText" + std::to_string(index));
+	}
 
 	if (widget == nullptr)
 		return;
 
 	auto hpBar = dynamic_cast<tgui::ProgressBar*>(widget.get());
 	hpBar->setValue(hpBar->getValue() - change);
+
+	auto barText = dynamic_cast<tgui::Label*>(text.get());
+	barText->setText(std::to_string(hpBar->getValue()) + " / " + std::to_string(hpBar->getMaximum()) + "HP");
 
 }
 
@@ -181,53 +232,55 @@ void GUImanager::updatePlayerPositionMap(int oldX, int oldY, int newX, int newY)
 	//Set old cell back to white
 	auto widget = gui->get("mapCell_" + std::to_string(oldX) + "_" + std::to_string(oldY));
 	auto playerCell = dynamic_cast<tgui::Panel*>(widget.get());
-	playerCell->setBackgroundColor(sf::Color::White);
+	if (playerCell != nullptr) playerCell->setBackgroundColor(sf::Color::White);
 
 	// Set new cell to red
 	auto newWidget = gui->get("mapCell_" + std::to_string(newX) + "_" + std::to_string(newY));
 	auto newCell = dynamic_cast<tgui::Panel*>(newWidget.get());
-	newCell->setBackgroundColor(sf::Color::Red);
+	if (newCell != nullptr) newCell->setBackgroundColor(sf::Color::Red);
 }
 
 //On click of Player Info Tab this hides the current one shows the new one
-void GUImanager::setActionMenuEnabled(ActionMenuEnabled menuToEnable) {
+void GUImanager::setActionMenuEnabled(ActionMenuEnabled menuToEnable, tgui::Panel::Ptr parent) {
 	if (menuToEnable == actionMenuEnabled)
 		return;
 
-	auto widget = combatGUI->get("actionMenu" + std::to_string((int)actionMenuEnabled));
-	auto actionMenu = dynamic_cast<tgui::Panel*>(widget.get());
-	actionMenu->hide();
-
-	//key = "actionMenuButton" + playerIndex;
-	auto buttonWidget = combatGUI->get("actionMenuButton" + std::to_string((int)actionMenuEnabled));
+	auto buttonWidget = parent->get("actionMenuButton" + std::to_string((int)actionMenuEnabled));
 	auto buttonPressed = dynamic_cast<tgui::Button*>(buttonWidget.get());
 	buttonPressed->enable();
 	buttonPressed->getRenderer()->setBackgroundColor(sf::Color::Transparent);
-
-	auto newWidget = combatGUI->get("actionMenu" + std::to_string((int)menuToEnable));
-	auto newActionMenu = dynamic_cast<tgui::Panel*>(newWidget.get());
-	newActionMenu->show();
-
-	auto buttonWidgetToDisable = combatGUI->get("actionMenuButton" + std::to_string((int)menuToEnable));
+	
+	auto buttonWidgetToDisable = parent->get("actionMenuButton" + std::to_string((int)menuToEnable));
 	auto buttonPressedToDisable = dynamic_cast<tgui::Button*>(buttonWidgetToDisable.get());
 	buttonPressedToDisable->disable();
 	buttonPressedToDisable->getRenderer()->setBackgroundColor(sf::Color::White);
 
-	for (int i = 0; i < 4; i++) {
-		std::shared_ptr<tgui::Widget> actionButtonWidget = combatGUI->get("abilityButton" + std::to_string(i) + std::to_string((int)actionMenuEnabled));
-		actionButtonWidget->hide();
-		std::shared_ptr<tgui::Widget> actionButtonWidgetNew = combatGUI->get("abilityButton" + std::to_string(i) + std::to_string((int)menuToEnable));
-		actionButtonWidgetNew->show();
+	if (parent == combatGUI) {
+		auto widget = parent->get("actionMenu" + std::to_string((int)actionMenuEnabled));
+		auto actionMenu = dynamic_cast<tgui::Panel*>(widget.get());
+		actionMenu->hide();
+
+		auto newWidget = parent->get("actionMenu" + std::to_string((int)menuToEnable));
+		auto newActionMenu = dynamic_cast<tgui::Panel*>(newWidget.get());
+		newActionMenu->show();
+
+		for (int i = 0; i < 4; i++) {
+			std::shared_ptr<tgui::Widget> actionButtonWidget = parent->get("abilityButton" + std::to_string(i) + std::to_string((int)actionMenuEnabled));
+			actionButtonWidget->hide();
+			std::shared_ptr<tgui::Widget> actionButtonWidgetNew = parent->get("abilityButton" + std::to_string(i) + std::to_string((int)menuToEnable));
+			actionButtonWidgetNew->show();
+		}
 	}
 
 	actionMenuEnabled = menuToEnable;
+	pGameObject->setActivePlayer((int)menuToEnable);
 }
 
 //Creates the sprites used in the info tabs
 void GUImanager::createProfilePicture(int playerIndex, Unit* player, sf::Vector2f profilePos, tgui::Panel::Ptr parent) {
-	const sf::Texture* img = player->sprite.getTexture();
+	const sf::Texture& img = player->sprite->getTexture();
 
-	tgui::Picture::Ptr playerProfilePicture = std::make_shared<tgui::Picture>(*img);
+	tgui::Picture::Ptr playerProfilePicture = std::make_shared<tgui::Picture>(img);
 	playerProfilePicture->setPosition((profilePos.x - 5), profilePos.y + 20);
 	playerProfilePicture->setSize(70, 70);
 	playerProfilePicture->setOpacity(0.7f);
@@ -261,7 +314,7 @@ void GUImanager::createBar(int playerIndex, int maxVal, int currVal, sf::Vector2
 	key += "Bar" + std::to_string(playerIndex);
 	parent->add(bar, key);
 
-	tgui::TextBox::Ptr barText = std::make_shared<tgui::TextBox>();
+	tgui::Label::Ptr barText = std::make_shared<tgui::Label>();
 
 	auto genBarText = [&](std::string boxString, int textSize, int xOffset, int yOffset) {
 		barText->setText(boxString);
@@ -277,7 +330,7 @@ void GUImanager::createBar(int playerIndex, int maxVal, int currVal, sf::Vector2
 		for (char c : type)
 			key += std::tolower(c, std::locale());
 		key += "barText" + std::to_string(playerIndex);
-
+		
 		parent->add(barText, key);
 	};
 
@@ -308,6 +361,7 @@ void GUImanager::createPlayerProfile(int playerIndex, Unit* player, tgui::Panel:
 		playerProfile->setPosition((windowWidth)* (playerIndex / 2), windowSize.y - (windowHeight));
 	else
 		playerProfile->setPosition((windowWidth)* (playerIndex / 2), (windowSize.y - (2 * windowHeight)));
+
 	playerProfile->setBackgroundColor(sf::Color::Black);
 	playerProfile->setOpacity(0.3f);
 	key = "playerProfile" + std::to_string(playerIndex);
@@ -319,7 +373,7 @@ void GUImanager::createPlayerProfile(int playerIndex, Unit* player, tgui::Panel:
 	createBar(playerIndex, player->maxAP, player->currAP, sf::Vector2f(profilePos.x + 60, profilePos.y + 30), "AP", parent, combat);
 	createBar(playerIndex, player->maxHP, player->currHP, sf::Vector2f(profilePos.x + 60, profilePos.y + 70), "HP", parent, combat);
 
-	if (combat) {
+	//if (combat) {
 		tgui::Button::Ptr actionMenuButton = std::make_shared<tgui::Button>();
 		actionMenuButton->setSize(playerProfile->getSize());
 		actionMenuButton->setPosition(playerProfile->getPosition());
@@ -328,13 +382,13 @@ void GUImanager::createPlayerProfile(int playerIndex, Unit* player, tgui::Panel:
 		actionMenuButton->setOpacity(0.2f);
 
 		if (playerIndex == 0)
-			actionMenuButton->connect("clicked", &GUImanager::setActionMenuEnabled, this, ActionMenuEnabled::player0);
+			actionMenuButton->connect("clicked", &GUImanager::setActionMenuEnabled, this, ActionMenuEnabled::player0, parent);
 		else if (playerIndex == 1)
-			actionMenuButton->connect("clicked", &GUImanager::setActionMenuEnabled, this, ActionMenuEnabled::player1);
+			actionMenuButton->connect("clicked", &GUImanager::setActionMenuEnabled, this, ActionMenuEnabled::player1, parent);
 		else if (playerIndex == 2)
-			actionMenuButton->connect("clicked", &GUImanager::setActionMenuEnabled, this, ActionMenuEnabled::player2);
+			actionMenuButton->connect("clicked", &GUImanager::setActionMenuEnabled, this, ActionMenuEnabled::player2, parent);
 		else
-			actionMenuButton->connect("clicked", &GUImanager::setActionMenuEnabled, this, ActionMenuEnabled::player3);
+			actionMenuButton->connect("clicked", &GUImanager::setActionMenuEnabled, this, ActionMenuEnabled::player3, parent);
 
 		actionMenuButton->connect("MouseEntered ",
 			[](tgui::Button::Ptr button) -> void {button->getRenderer()->setBackgroundColor(sf::Color::White);}
@@ -347,11 +401,13 @@ void GUImanager::createPlayerProfile(int playerIndex, Unit* player, tgui::Panel:
 		key = "actionMenuButton" + std::to_string(playerIndex);
 		parent->add(actionMenuButton, key);
 		addToCleanupCollection(parent, actionMenuButton);
-		if (playerIndex == 0) {
+		if (!combat || playerIndex == 0) {
 			actionMenuButton->getRenderer()->setBackgroundColor(sf::Color::White);
 			actionMenuButton->disable();
+			actionMenuEnabled = ActionMenuEnabled::player0;
 		}
-	}
+
+	//}
 }
 
 void GUImanager::createMap(std::array<std::array<Tile, 30>, 30> map, std::vector<PlayerCell> players, tgui::Panel::Ptr parent) {
@@ -522,9 +578,142 @@ void GUImanager::initCombatGUI(CombatState& combat, std::vector<Unit*>& players,
 		index++;
 	}
 
+	createCombatQueue(combat);
+
+
 	actionMenuEnabled = ActionMenuEnabled::player0;
+	pGameObject->setActivePlayer(0);
 	combatGUI->show();
 }
+
+void GUImanager::createCombatQueue(CombatState& state) {
+
+	tgui::Panel::Ptr queueBar = std::make_shared<tgui::Panel>();
+
+	queueBar->setPosition(0, 0);
+	queueBar->setSize(pGameObject->WINDOW_WIDTH, 125);
+
+	queueBar->setBackgroundColor(sf::Color(0, 0, 0, 80));
+
+	combatGUI->add(queueBar, "queueBar");
+
+	tgui::Label::Ptr title = std::make_shared<tgui::Label>();
+
+	title->setFont(font);
+	title->setTextSize(28);
+	title->getRenderer()->setBorders(1);
+	title->setTextColor(sf::Color::White);
+	//title->getRenderer()->setBackgroundColor(sf::Color{ 0,0,0,80 });
+	title->getRenderer()->setBorderColor(sf::Color::Transparent);
+	title->setText("Combat\nOrder");
+	title->setPosition(5, 30);
+
+	int offset = title->getSize().x + 30;
+	qOffset = offset;
+
+	combatGUI->add(title);
+
+	float panelLength = ((float)pGameObject->WINDOW_WIDTH - offset) / state.unitsInCombat.size();
+	int i = 0;
+	
+	for (auto& unit : state.unitsInCombat) {
+
+		tgui::Panel::Ptr profile = std::make_shared<tgui::Panel>();
+		
+		profile->setSize(panelLength, 125);
+		profile->setPosition(i*panelLength + offset, 0);
+		profile->setBackgroundColor(sf::Color{0,0,0,80});
+
+		combatGUI->add(profile, "queueProfile" + std::to_string(i));
+
+		const sf::Texture& img = unit->sprite->getTexture();
+
+		tgui::Picture::Ptr picture = std::make_shared<tgui::Picture>(img);
+
+		picture->setPosition((i*panelLength + offset + 5), 15);
+		picture->setSize(70, 70);
+		picture->setOpacity(0.7f);
+
+		std::string key = "queuePicture" + std::to_string(i);
+		combatGUI->add(picture, key);
+		addToCleanupCollection(combatGUI, picture);	
+
+		tgui::Label::Ptr info = std::make_shared<tgui::Label>();
+
+		info->setFont(font);
+		info->setTextSize(28);
+		info->getRenderer()->setBorders(1);
+		info->getRenderer()->setPadding(tgui::Borders(3.f, 3.f)); //infoLabel->getRenderer()->setPadding(tgui::Borders(15.f, 15.f));
+		info->setTextColor(sf::Color::White);
+		info->getRenderer()->setBorderColor(sf::Color::Transparent);
+		
+		auto pos = picture->getPosition();
+		info->setPosition(pos.x + 80, pos.y+15);
+
+		std::string text = std::to_string(i+1) + ". " + unit->nickName + "\n" + unit->name;
+		info->setText(text);
+		combatGUI->add(info, "queueInfo" + std::to_string(i));
+
+		qPanels.push_back({ unit, profile, picture, info });
+
+		for (auto& ip : enemyInfos) {
+			if (ip.unit == unit) {
+
+				info->connect("MouseEntered", [](tgui::Widget::Ptr infoLabel) {
+					std::cout << "show" << std::endl;
+					infoLabel->show();
+				}, ip.infoLabel);
+
+				info->connect("MouseLeft", [](tgui::Widget::Ptr infoLabel) {
+					std::cout << "hide" << std::endl;
+					infoLabel->hide();
+				}, ip.infoLabel);
+			}
+		}
+
+		i++;
+	}
+	
+}
+
+void GUImanager::updateCombatQueue(CombatState& state) {
+
+	int i = 0;
+	float panelLength = ((float)pGameObject->WINDOW_WIDTH - qOffset) / state.unitsInCombat.size();
+
+	for (auto& widget : qPanels) {
+
+		bool found = false;
+
+		for (auto& unit : state.unitsInCombat) {
+
+			if (unit == widget.unit) {
+				widget.profile->setPosition(i*panelLength + qOffset, 0);
+
+				widget.picture->setPosition((i*panelLength + qOffset + 5), 15);
+
+				auto pos = widget.picture->getPosition();
+				widget.info->setPosition(pos.x + 80, pos.y + 15);
+
+				found = true;
+				continue;
+			}
+
+		}
+
+		if (!found) {
+			combatGUI->remove(widget.picture);
+			combatGUI->remove(widget.info);
+			combatGUI->remove(widget.profile);
+			widget.picture = nullptr;
+			widget.profile = nullptr;
+			widget.info = nullptr;
+		}
+
+		i++;
+	}
+}
+
 
 void GUImanager::createEnemyInfo(Unit* unit, int unitIndex) {
 	
@@ -535,9 +724,26 @@ void GUImanager::createEnemyInfo(Unit* unit, int unitIndex) {
 	trigger->setPosition(unit->x * 128 + guiOffset.x, unit->y * 128 + guiOffset.y);
 	trigger->setSize(128, 128);
 
-	infoLabel->setText(unit->name);
 	infoLabel->setFont(font);
-	infoLabel->setTextSize(28);
+	infoLabel->setTextSize(24);
+	infoLabel->getRenderer()->setBorders(1);
+	
+	std::string t = unit->nickName + "\n" + unit->name + "\n";
+
+	float health = unit->currHP / unit->maxHP;
+
+	if (health >= 0.99)
+		t += "In perfect shape.";
+	else if (health >= 0.75)
+		t += "Looks bruised.";
+	else if (health >= 0.5)
+		t += "Is visibly hurt";
+	else if (health >= 0.15)
+		t += "Heavy wounds are showing";
+	else
+		t += "Probably can't hold out much longer";
+
+	infoLabel->setText(t);
 
 	infoLabel->setPosition(unit->x * 128 + guiOffset.x + 128, unit->y * 128 + guiOffset.y);
 	infoLabel->hide();
@@ -545,10 +751,10 @@ void GUImanager::createEnemyInfo(Unit* unit, int unitIndex) {
 	infoLabel->getRenderer()->setBackgroundColor(sf::Color(0, 0, 0, 80));
 	infoLabel->getRenderer()->setTextColor(sf::Color::White);
 	infoLabel->getRenderer()->setBorderColor(sf::Color::Transparent);
-	infoLabel->getRenderer()->setPadding(tgui::Borders(30.f, 30.f));
+	infoLabel->getRenderer()->setPadding(tgui::Borders(15.f, 15.f));
+
 
 	trigger->connect("MouseEntered", [infoLabel]() {
-		std::cout << "Show\n";
 		//infoLabel->showWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(300));
 		infoLabel->show();
 	});
@@ -556,7 +762,6 @@ void GUImanager::createEnemyInfo(Unit* unit, int unitIndex) {
 	trigger->connect("MouseLeft", [infoLabel]() {
 		//infoLabel->hideWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(300));
 		infoLabel->hide();
-		std::cout << "Hide\n";
 	});
 
 	combatGUI->add(trigger);
@@ -568,9 +773,13 @@ void GUImanager::createEnemyInfo(Unit* unit, int unitIndex) {
 void GUImanager::updateEnemyPanelsPos(int amount) {
 
 	for (auto& em : enemyInfos) {
-		//em.box->setPosition(em.originalPos.x + guiOffset.x , em.originalPos.y + guiOffset.y);
+		/*
 		em.trigger->setPosition(em.originalPos.x + guiOffset.x , em.originalPos.y + guiOffset.y);
 		em.infoLabel->setPosition(em.originalPos.x + guiOffset.x + 128, em.originalPos.y + guiOffset.y);
+		*/
+		em.trigger->setPosition(em.unit->x * 128 + guiOffset.x, em.unit->y * 128 + guiOffset.y);
+		em.infoLabel->setPosition(em.unit->x * 128 + guiOffset.x + 128, em.unit->y * 128 + guiOffset.y);
+
 	}
 
 }

@@ -7,8 +7,9 @@
 class Graph {
 private:
 
-  bool isInLimits(Node node);
-  bool isAccesible(Node node);
+  bool isInLimits(Node& node);
+  bool isAccesible(Node& node);
+  bool isOccupied(Node& node);
 
 public:  
   Graph(int w, int h, std::array<std::array<Tile, 30>, 30>& m) : width(w), height(h), map(m) {}
