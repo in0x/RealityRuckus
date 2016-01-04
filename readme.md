@@ -7,7 +7,9 @@ You will have to explore randomly generated areas and face a multitude of foes i
 
 Upon finding all artifact fragments in an area, your hero will have to travel to the next dimension, where he will have to face new challenges.
 
-Reality Ruckus is built using SFML in combination with TGUI
+The updates on this repo are not reflective of the actual progress, as all of the work is happening on private hosting. 
+
+Reality Ruckus is built using SFML in combination with TGUI.
 
 ### Contributions
 Most of the code in this project has been touched by all of us at one point or another. There are however a few modules that I wrote on my own, which I'm proud of. These would be a good place to get a feel for my code:
