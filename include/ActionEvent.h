@@ -48,10 +48,21 @@ class APchangeActionEvent : public ActionEvent {
 
 public:
 
-	APchangeActionEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost, float ap);
+	APchangeActionEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost, float ap, std::string animation ="");
 
 	virtual std::vector<CombatEvent> doAction(Unit* sender, int x, int y) override;
 
 
+};
+
+class PommelStrikeEvent : public ActionEvent {
+public:
+
+	PommelStrikeEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost, float damage, float ap, std::string animation = "");
+
+	virtual std::vector<CombatEvent> doAction(Unit* sender, int x, int y) override;
+
+private:
+	float ap;
 };
 

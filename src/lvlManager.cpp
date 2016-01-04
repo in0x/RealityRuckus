@@ -36,6 +36,9 @@ void lvlManager::setOccupied(int x, int y, bool occupied) {
 }
 
 bool lvlManager::isOccupied(int x, int y) {
+	/*if (x < 0 || y < 0 || x >= 30 || y >= 30) {
+		return false;
+	}*/
 	return map[x][y].occupied;
 }
 
@@ -217,9 +220,9 @@ void lvlManager::testTileGen(TextureManager* texMng, sf::RenderWindow* window_pt
 }
 
 bool lvlManager::isAccessible(int x, int y){
-	if (x < 0 || y < 0 || x > 30 || y > 30){
+	/*if (x < 0 || y < 0 || x >= 30 || y >= 30){
 		return false;
-	}
+	}*/
 	return map[x][y].accessible;
 }
 

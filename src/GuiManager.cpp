@@ -1,6 +1,7 @@
 #pragma once
 #include "GuiManager.h"
 #include <typeinfo>
+#include <algorithm>
 
 
 GUImanager::GUImanager(int screenWidth, int screenHeight, sf::RenderWindow* window, Game* gameObjectPtr) {
@@ -128,14 +129,18 @@ void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vecto
 
 		index = findPlayer(playerVector, e.affected);
 
+		if (e.type == CombatEventType::UnitDied)
+			std::cout << "Unit died" << std::endl;
+
 		if (index != -1) {
 			if (e.type == 1) {
 				updatePlayerPositionMap(e.oldX, e.oldY, e.newX, e.newY);
 			}
 
 			else if (e.type == CombatEventType::AP) {
-				updateAPbar(index, e.APChange);
-				updateAPbar(index, e.APChange, true);
+				updateAPbar(index, e.affected->currAP);
+				updateAPbar(index, e.affected->currAP, true);
+				lockActionMenu(playerVector);
 			}
 
 			else if (e.type == CombatEventType::HP) {
@@ -153,6 +158,44 @@ void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vecto
 		if (displayPopUps) displayUnitChangeText(e);
 	}
 }
+
+void GUImanager::lockActionMenu(std::vector<Unit*>& playerVector)
+{
+	std::vector<int> indices;
+	float maxRatio=0;
+	for (int i = 0; i < playerVector.size(); i++)
+	{
+		float currRatio = playerVector[i]->currAP / playerVector[i]->maxAP;
+		if (currRatio > maxRatio)
+		{
+			maxRatio = currRatio;
+			indices = std::vector<int>();
+			indices.push_back(i);
+		}
+		else if (currRatio == maxRatio)
+			indices.push_back(i);
+	}
+	
+	setActionMenuEnabled((ActionMenuEnabled)indices[0], combatGUI);
+	for (int i = 0; i < playerVector.size(); i++)
+	{
+		std::string key = "actionMenuButton" + std::to_string(i);
+		tgui::Button::Ptr actionMenuButton = combatGUI->get<tgui::Button>(key);
+		if (std::find(indices.begin(), indices.end(), i) != indices.end()) {
+			// Find the item
+			actionMenuButton->enable();
+			actionMenuButton->getRenderer()->setBackgroundColor(sf::Color::Transparent);
+		}
+		else
+		{
+			actionMenuButton->disable();
+			actionMenuButton->getRenderer()->setBackgroundColor(sf::Color::White);
+		}
+	}
+	setActionMenuEnabled((ActionMenuEnabled)indices[0], combatGUI);
+
+}
+
 
 void GUImanager::updateEnemyPanelInfo(Unit* unit) {
 	for (auto& panel : enemyInfos) {
@@ -196,7 +239,8 @@ void GUImanager::updateAPbar(int index, int change, bool combat) {
 		return;
 
 	auto apBar = dynamic_cast<tgui::ProgressBar*>(widget.get());
-	apBar->setValue(apBar->getValue() - change);
+	std::cout << "change" << change << std::endl;
+	apBar->setValue(change);
 
 	auto barText = dynamic_cast<tgui::Label*>(text.get());
 	barText->setText(std::to_string(apBar->getValue()) + " / " + std::to_string(apBar->getMaximum()) + "AP");
@@ -242,8 +286,10 @@ void GUImanager::updatePlayerPositionMap(int oldX, int oldY, int newX, int newY)
 
 //On click of Player Info Tab this hides the current one shows the new one
 void GUImanager::setActionMenuEnabled(ActionMenuEnabled menuToEnable, tgui::Panel::Ptr parent) {
-	if (menuToEnable == actionMenuEnabled)
-		return;
+	if (menuToEnable == actionMenuEnabled) {}
+		//	return;
+		//std::cout << "does this happen often??" << std::endl;
+
 
 	auto buttonWidget = parent->get("actionMenuButton" + std::to_string((int)actionMenuEnabled));
 	auto buttonPressed = dynamic_cast<tgui::Button*>(buttonWidget.get());
@@ -253,7 +299,7 @@ void GUImanager::setActionMenuEnabled(ActionMenuEnabled menuToEnable, tgui::Pane
 	auto buttonWidgetToDisable = parent->get("actionMenuButton" + std::to_string((int)menuToEnable));
 	auto buttonPressedToDisable = dynamic_cast<tgui::Button*>(buttonWidgetToDisable.get());
 	buttonPressedToDisable->disable();
-	buttonPressedToDisable->getRenderer()->setBackgroundColor(sf::Color::White);
+	buttonPressedToDisable->getRenderer()->setBackgroundColor(sf::Color::Green);
 
 	if (parent == combatGUI) {
 		auto widget = parent->get("actionMenu" + std::to_string((int)actionMenuEnabled));
@@ -684,21 +730,22 @@ void GUImanager::updateCombatQueue(CombatState& state) {
 	for (auto& widget : qPanels) {
 
 		bool found = false;
-
+		int j = 0;
 		for (auto& unit : state.unitsInCombat) {
 
 			if (unit == widget.unit) {
-				widget.profile->setPosition(i*panelLength + qOffset, 0);
+				widget.profile->setPosition(j*panelLength + qOffset, 0);
 
-				widget.picture->setPosition((i*panelLength + qOffset + 5), 15);
+				widget.picture->setPosition((j*panelLength + qOffset + 5), 15);
 
 				auto pos = widget.picture->getPosition();
 				widget.info->setPosition(pos.x + 80, pos.y + 15);
-
+				tgui::Label* info = dynamic_cast<tgui::Label*>(widget.info.get());
+				info->setText(std::to_string(j+1)+info->getText().substring(1));
 				found = true;
 				continue;
 			}
-
+			j++;
 		}
 
 		if (!found) {

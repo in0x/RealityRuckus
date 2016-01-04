@@ -57,8 +57,8 @@ Unit* UnitManager::spawnUnit(UnitType u, int x, int y, bool isAccessible) {
 		case robotdude:
 			unit = new Unit(25, 25, new UnitAnimations(tex->textureTable["robotdudemove"]), aiFactory->getAIComponent("meleefighter"), x, y, robotdude);
 			unit->learnedActions = {
-				new AttackActionEvent("Medium Melee Attack", "\"I'll smack ya. Beep Boop.\"\n\nRange: 1\tDamage: 5",pActionMng, 1, 5, 5, "explosion"),
-				new AttackActionEvent("Strong Melee (Cleave)" , "Now it's angry. Robot falls into a rage. If it kills a Unit with this skill, it can attack another straight away.\n\nRange: 3\tDamage: 10",pActionMng,1, 8, 10),
+				new AttackActionEvent("Medium Melee Attack", "\"I'll smack ya. Beep Boop.\"\n\nRange: 1\tDamage: 5",pActionMng, 1, 3, 5, "explosion"),
+				new AttackActionEvent("Strong Melee (Cleave)" , "Now it's angry. Robot falls into a rage. If it kills a Unit with this skill, it can attack another straight away.\n\nRange: 3\tDamage: 10",pActionMng,1, 8, 10, "cleave"),
 				new ActionEvent("Brace", "Robot is ready to take some punishment. It takes reduced damage until next round.\n\nRange: -\tReduction: 3", pActionMng, 0 ,3),
 				new MoveActionEvent("Move", "Robots, on the move.",pActionMng)
 			};
@@ -68,7 +68,7 @@ Unit* UnitManager::spawnUnit(UnitType u, int x, int y, bool isAccessible) {
 			unit->learnedActions = {
 				new AttackActionEvent("Light Ranged Attack", "It hurts, just enough to be annoying.\n\nRange: 6\tDamage: 3",pActionMng, 6, 2, 3, "bullet"),
 				new APchangeActionEvent("Draining Shot", "This stuff is potent.\n\nRange: 4\tAP loss: 8",pActionMng,4,8,8),
-				new AttackActionEvent("Healing Shot", "Fix me up, Doc.\n\nRange: 5\tHeal: 6", pActionMng, 5 , 5 , -6), // Use an Attack with a negative dmg val to fake a heal
+				new AttackActionEvent("Healing Shot", "Fix me up, Doc.\n\nRange: 5\tHeal: 6", pActionMng, 5 , 5 , -6, "heal"), // Use an Attack with a negative dmg val to fake a heal
 				new MoveActionEvent("Move", "Robots, on the move.",pActionMng)
 			};
 			break;

@@ -17,7 +17,7 @@ struct CompareUnitApPtr
 
 CombatState::CombatState(std::vector<Unit*> combatUnitPtrs) {
 	unitsInCombat = combatUnitPtrs;
-	std::sort(unitsInCombat.begin(), unitsInCombat.end(), unitComparer); 
+	std::sort(unitsInCombat.begin(), unitsInCombat.end(), unitComparer);
 }
 
 void CombatState::cycleUnitModifiers() {
@@ -25,26 +25,26 @@ void CombatState::cycleUnitModifiers() {
 		unit->cycleModifiers();
 }
 
-void CombatState::skipTurn() {
-	Unit* first = getFirstUnit();
-	Unit* second;
-
-	for (auto& unit : unitsInCombat)
-		if (unit->type == UnitType::player)
-			second = unit;
-	
-	unitsInCombat[0] = second;
-	unitsInCombat[1] = first;
+void CombatState::skipTurn(Unit* skipper) {
+	if (skipper->currAP >= 5)
+		skipper->currAP -= 5;
+	else
+		skipper->currAP = 0;
+	updateListOfUnits();
 }
 
 std::ostream& operator<<(std::ostream& os, const Unit& unit) {
-	os << unit.nickName + ": ( Type = " + unit.name + " ) (AP: " + std::to_string(unit.currAP) + " ) " + " (HP: " + std::to_string(unit.currAP) + " ) " + " ( x: " + std::to_string(unit.x) + " , y: " + std::to_string(unit.y) + " )";
+	os << unit.nickName + ": ( Type = " + unit.name + " ) (APR: " + std::to_string(unit.currAP / unit.maxAP) + " , AP: " + std::to_string(unit.currAP) + " ) " + " (HP: " + std::to_string(unit.currHP) + " ) " + " ( x: " + std::to_string(unit.x) + " , y: " + std::to_string(unit.y) + " )";
 	return os;
 }
 
 
 void CombatState::updateListOfUnits() {
+	//std::cout << "before" << std::endl;
+	//listUnits();
 	std::sort(unitsInCombat.begin(), unitsInCombat.end(), unitComparer);
+	//std::cout << "after" << std::endl;
+	//listUnits();
 	std::vector<Unit*> unitsToRemove = std::vector<Unit*>();
 	for (auto unit : unitsInCombat) {
 		if (unit->currHP <= 0.99) {
@@ -126,7 +126,7 @@ void CombatState::addUnitsToCombat(std::vector<Unit*> allVisibleUnits) {
 	}
 	if (allVisibleUnits.size() > 0) {
 		for (int i = 0; i < allVisibleUnits.size(); i++) {
-			if(allVisibleUnits[i]->type != player)
+			if(allVisibleUnits[i]->type != UnitType::player)
 				unitsInCombat.push_back(allVisibleUnits[i]);
 		}
 	}

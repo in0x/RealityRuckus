@@ -1,11 +1,9 @@
 #include "AIComponent.h"
 #include "CombatEvent.h"
 
-void operator+(std::vector<CombatEvent> &lhv, std::vector<CombatEvent> &rhv)
+sf::Vector2i operator+(sf::Vector2i &lhv, sf::Vector2i &rhv)
 {
-	for(auto ev : rhv) {
-		lhv.push_back(ev);
-	}
+	return{ lhv.x + rhv.x, lhv.y + rhv.y };
 }
 
 std::shared_ptr<AIComponent> AIFactory::getAIComponent(std::string key) {
@@ -155,6 +153,40 @@ std::vector<CombatEvent> AIUtility::runCommands(Command& actions, Unit* unit) {
 	return events;
 }
 
+sf::Vector2i AIUtility::getRandMoveDir(sf::Vector2i vec, int multip) {
+	if (multip < 1) multip = 1;
+
+	std::vector<sf::Vector2i> moveDirs{};
+
+	if (multip == 1) {
+
+		 moveDirs = {
+			{ 1 * multip, 0 },
+			{ 0, 1 * multip },
+			{ -1 * multip , 0 },
+			{ 0, -1 * multip }
+		};
+	}
+
+	else {
+
+		moveDirs = {
+			{ 1 * multip, 0 },
+			{ 0, 1 * multip },
+			{ -1 * multip , 0 },
+			{ 0, -1 * multip },
+			{ 1 * multip, 1 * multip },
+			{ -1 * multip, -1 * multip },
+			{ 1 * multip, -1 * multip },
+			{ -1 * multip, 1 * multip }
+		};
+	}
+
+	int idx = rand() % moveDirs.size();
+
+	return vec + moveDirs[idx];
+}
+
 std::vector<CombatEvent> MeleeFighterAI::run(AIComponent& component) {
 
 	// In this case a cleave is more valuable than a regular phys, so we try to use it first
@@ -197,7 +229,7 @@ std::vector<CombatEvent> MeleeFighterAI::run(AIComponent& component) {
 		}
 	}
 
-	if (rand() % 100 + 1 < 20) {
+	if (rand() % 100 + 1 < 25) {
 		if (component.util.unit->modifiers.size() < 1)
 			actions = component.evalDefSpecial->evaluate(component);
 	}
@@ -225,8 +257,16 @@ Command MeleeAttack::evaluate(AIComponent& component) {
 
 	// Attack the first unit in range
 	if (enemies[0].distance <= range) {
+
+		if (range == 1) {
+			actions = { { CommandType::Physical },{ { target->x, target->y } } };
+			return actions;
+		}
+
 		target = enemies[0].unit;
-		auto moveTo = AIUtility::findFieldToMoveTo({ target->x, target->y - (range/2) }, range, util);
+
+		auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ target->x, target->y }, range / 2);
+		auto moveTo = AIUtility::findFieldToMoveTo( vec, range, util);
 
 		if (moveTo.x != -1) { //field found
 
@@ -240,7 +280,8 @@ Command MeleeAttack::evaluate(AIComponent& component) {
 		for (auto& other : enemies) {
 			//auto path = AIUtility::getPath(util, { other.unit->x, other.unit->y });
 
-			auto moveTo = AIUtility::findFieldToMoveTo({ other.unit->x, other.unit->y - 1 }, range, util);
+			auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ other.unit->x, other.unit->y }, range / 2);;
+			auto moveTo = AIUtility::findFieldToMoveTo(vec, range, util);
 
 			auto path = AIUtility::getPath(util, { moveTo });
 
@@ -250,7 +291,9 @@ Command MeleeAttack::evaluate(AIComponent& component) {
 
 				target = other.unit;
 
-				auto moveTo = AIUtility::findFieldToMoveTo({ other.unit->x, other.unit->y - (range/2) }, range, util, (range/2));
+				auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ target->x, target->y }, range / 2);
+				auto moveTo = AIUtility::findFieldToMoveTo(vec, range, util);
+
 
 				if (moveTo.x != -1) { //field found
 
@@ -283,14 +326,19 @@ Command CleaveAttack::evaluate(AIComponent& component) {
 	// Sorted by distance, ascending
 	auto enemies = AIUtility::getUnitsDistance(component.util);
 
-
 	if (enemies[0].distance <= range) {
-	
-		auto loc = AIUtility::findFieldToMoveTo({ enemies[0].unit->x, enemies[0].unit->y - 1 }, range, util);
+
+		target = enemies[0].unit;
+		auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ target->x, target->y }, range / 2);;
+		auto loc = AIUtility::findFieldToMoveTo(vec, range, util);
+
+		if (range == 1) {
+			actions = { { CommandType::Physical },{ { target->x, target->y } } };
+			return actions;
+		}
 
 		if (loc.x != -1) {
 			moveTo = loc;
-			target = enemies[0].unit;
 			actions = { { CommandType::Move, CommandType::Physical },{ moveTo,{ target->x, target->y } } };
 			return actions;
 		}
@@ -298,8 +346,10 @@ Command CleaveAttack::evaluate(AIComponent& component) {
 
 	for (auto& other : enemies) {
 		//auto path = AIUtility::getPath(util, { other.unit->x, other.unit->y });
+		target = other.unit;	//needs a target here in order not to crash
 
-		auto moveTo = AIUtility::findFieldToMoveTo({ other.unit->x, other.unit->y - 1 }, range, util);
+		auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ other.unit->x, other.unit->y }, range / 2);
+		auto moveTo = AIUtility::findFieldToMoveTo(vec, range, util);
 
 		auto path = AIUtility::getPath(util, moveTo);
 
@@ -408,7 +458,7 @@ Command ApplyAPDebuff::evaluate(AIComponent& component) {
 	// If a unit is already in range, apply the debuff to it
 	if (enemies[0].distance <= range) {
 		target = enemies[0].unit;
-		auto moveTo = AIUtility::findFieldToMoveTo({ target->x, target->y - (range / 2) }, range, util);
+		auto moveTo = AIUtility::findFieldToMoveTo(sf::Vector2i{ target->x, target->y } + AIUtility::getRandMoveDir(sf::Vector2i{ target->x, target->y }, range / 2),range, util);
 
 		if (moveTo.x != -1) { //field found
 
@@ -422,21 +472,24 @@ Command ApplyAPDebuff::evaluate(AIComponent& component) {
 
 		for (auto& other : enemies) {
 
-			auto path = AIUtility::getPath(util, { other.unit->x, other.unit->y });
+			auto moveTo = AIUtility::findFieldToMoveTo(sf::Vector2i{ other.unit->x, other.unit->y } +AIUtility::getRandMoveDir(sf::Vector2i{ other.unit->x, other.unit->y }, range / 2), range, util);
+			
+			auto path = AIUtility::getPath(util, moveTo);
+
+			auto end = path.back();
 
 			if (cost + path.size() <= component.util.unit->currAP) {
 
-				target = other.unit;
+				//auto moveTo = AIUtility::findFieldToMoveTo({ other.unit->x, other.unit->y - 1 }, range, util);
 
-				auto moveTo = AIUtility::findFieldToMoveTo({ other.unit->x, other.unit->y - range }, range, util);
+				if (moveTo.x != -1) { // Field found 
 
-				if (moveTo.x != -1) { //field found
-				
-					actions = { { CommandType::Move, CommandType::AggSpecial },{ moveTo,{ target->x, target->y } } };
+					actions = { { CommandType::Move, CommandType::AggSpecial },{ moveTo,{ other.unit->x, other.unit->y } } };
 					return actions;
-				}
 
+				}
 			}
+
 		}
 	}
 

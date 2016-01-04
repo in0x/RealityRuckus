@@ -6,7 +6,8 @@
 #include <iostream>
 
 enum class PlayerType {
-	armyfighter
+	armyfighter,
+	armyweirdo
 };
 
 class Player : public Unit {

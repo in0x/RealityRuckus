@@ -55,11 +55,14 @@
 			else
 				actionmanager->playAnimation(animation, sf::Vector2f(sender->x, sender->y), sf::Vector2f(x, y), 0.2);
 			
-			/*CombatEvent ce = CombatEvent(sender, CombatEventType::AP);
-			sender->loseAP(cost);
-			ce.setAPChange(cost);
-			events.push_back(ce);*/
-			
+			/*float d_cost = cost;
+			sender->applyModifiers(ModifierType::APLoss, d_cost);
+
+			CombatEvent ce = CombatEvent(sender, CombatEventType::AP);
+			sender->loseAP(d_cost);
+			ce.setAPChange(d_cost);
+			events.push_back(ce);
+			*/
 		}
 
 		ActionEvent::doAction(sender, x, y);
@@ -67,8 +70,8 @@
 		return events;
 	}
 
-	APchangeActionEvent::APchangeActionEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost, float ap) 
-		: ActionEvent(name, description, actionmanager, range, cost, ap) {}
+	APchangeActionEvent::APchangeActionEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost, float ap, std::string animation) 
+		: ActionEvent(name, description, actionmanager, range, cost, ap, animation) {}
 	
 
 	std::vector<CombatEvent> APchangeActionEvent::doAction(Unit* sender, int x, int y) {
@@ -81,13 +84,64 @@
 		std::vector<CombatEvent> events = actionmanager->changeAP(sender, x, y, damage, range, cost);
 
 		if (events[0].type != CombatEventType::NotValid) {
+
+			float d_cost = cost;
+			sender->applyModifiers(ModifierType::APLoss, d_cost);
 			CombatEvent ce = CombatEvent(sender, CombatEventType::AP);
-			sender->loseAP(cost);
-			ce.setAPChange(cost);
+			sender->loseAP(d_cost);
+			ce.setAPChange(d_cost);
 			events.push_back(ce);
 		}
 
 		ActionEvent::doAction(sender,x,y);
+
+		return events;
+	}
+
+	PommelStrikeEvent::PommelStrikeEvent(std::string name, std::string description, ActionManager* actionmanager, int range, int cost, float damage, float ap, std::string animation)
+		: ActionEvent(name, description, actionmanager, range, cost, ap, animation) {
+		this->ap = ap;
+	}
+
+	std::vector<CombatEvent> PommelStrikeEvent::doAction(Unit* sender, int x, int y) {
+
+		if (x > 30)
+			x /= 128;
+		if (y > 30)
+			y /= 128;
+
+		float drain = ap;
+
+		if (rand() % 100 + 1 < 17) {
+			drain = 1000;
+		}
+
+		std::vector<CombatEvent> events = actionmanager->changeAP(sender, x, y, drain, range, cost);
+
+		/*if (events[0].type != CombatEventType::NotValid) {
+
+			float d_cost = cost;
+			sender->applyModifiers(ModifierType::APLoss, d_cost);
+			CombatEvent ce = CombatEvent(sender, CombatEventType::AP);
+			sender->loseAP(d_cost);
+			ce.setAPChange(d_cost);
+			events.push_back(ce);
+		}*/
+
+		auto d_events = actionmanager->damageUnit(sender, x, y, damage, range, cost);
+
+		if (d_events[0].type != CombatEventType::NotValid) {
+
+			if (range == 1)
+				actionmanager->playAnimation(animation, sf::Vector2f(x, y), sf::Vector2f(x, y), 2.4);
+			else
+				actionmanager->playAnimation(animation, sf::Vector2f(sender->x, sender->y), sf::Vector2f(x, y), 0.2);
+		}
+
+		for (auto& ev : d_events)
+			events.push_back(ev);
+
+		ActionEvent::doAction(sender, x, y);
 
 		return events;
 	}

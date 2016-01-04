@@ -15,7 +15,8 @@ std::vector<CombatEvent> ActionManager::moveUnit(Unit * unit, int x, int y)
 	int oldx = unit->x;
 	int oldy = unit->y;
 	std::vector<Node> path = unitManager->moveUnit(x, y, unit);
-	if (path.size())
+
+	if (path.size() && path.size() < 90) // Pathfinder seems to sometimes return 101 for some reason, so this is a quick and dirty fix
 	{
 		if (path.size() > unit->currAP) {
 			events.push_back(CombatEvent{ unit, CombatEventType::NotValid,
@@ -34,14 +35,17 @@ std::vector<CombatEvent> ActionManager::moveUnit(Unit * unit, int x, int y)
 		float cost = path.size();
 		unit->applyModifiers(ModifierType::APLoss, cost);
 
+
+		float d_cost = cost;
+		unit->applyModifiers(ModifierType::APLoss, d_cost);
+		unit->loseAP(d_cost);
 		CombatEvent c2 = CombatEvent(unit, CombatEventType::AP);
-		c2.setAPChange(cost);
+		c2.setAPChange(d_cost);
 		events.push_back(c2);
-		unitManager->removeAP(unit, cost);
 	}
 	else
 	{
-		CombatEvent c1 = CombatEvent(unit, CombatEventType::None);
+		CombatEvent c1 = CombatEvent(unit, CombatEventType::NotValid);
 		events.push_back(c1);
 	}
 	return events;
@@ -142,10 +146,13 @@ std::vector<CombatEvent> ActionManager::changeAP(Unit * unit, int x, int y, floa
 	else
 	{
 		affectedUnit->applyModifiers(ModifierType::APLoss, ap);
-		affectedUnit->loseAP(ap);
+
+		float d_cost = cost;
+		affectedUnit->applyModifiers(ModifierType::APLoss, d_cost);
+		affectedUnit->loseAP(d_cost);
 		currentCombat->updateListOfUnits();
 		CombatEvent ce = { affectedUnit, CombatEventType::AP };
-		ce.setAPChange(ap);
+		ce.setAPChange(d_cost);
 		events.push_back(ce);
 	}
 

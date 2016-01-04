@@ -30,6 +30,7 @@ public:
 	void initCombatGUI(CombatState& combat, std::vector<Unit*>& player, std::array<std::array<Tile, 30>, 30>& map);
 	void returnToExploration(int amountOfPlayers);
 	void handleCombatEvents(std::vector<CombatEvent>& combatEvents, std::vector<Unit*>& playerVector, bool displayPopUps = true);
+	void lockActionMenu(std::vector<Unit*>& playerVector);
 	void updatePlayerPositionMap(int oldX, int oldY, int newX, int newY);
 	void updateWindowOffset(int x, int y, int unitsInCombat);
 	void displayMessage(std::string message, sf::Color color);

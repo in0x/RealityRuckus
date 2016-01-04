@@ -56,6 +56,7 @@ public:
 
 	static inline int countUnitsInVicinity(std::vector<UnitWithDist>, sf::Vector2i pos, int distance);
 
+	static inline sf::Vector2i getRandMoveDir(sf::Vector2i vec, int multip = 1);
 };
 
 	

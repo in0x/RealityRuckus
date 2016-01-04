@@ -61,6 +61,6 @@ public:
 	int replenishAP();
 
 private:
-	float apGain = 2.5;
+	float apGain = 0.5f;
 };
 

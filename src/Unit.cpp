@@ -125,6 +125,8 @@ void Unit::applyModifiers(ModifierType type, float& val) {
 
 void Unit::loseAP(float amount) {
 
+	name; nickName;
+
 	currAP -= amount;
 
 	if (currAP < 0)
@@ -140,7 +142,9 @@ void Unit::loseHP(float amount) {
 		currHP = 0;
 }
 
-void Unit::gainAP(float amount) {
+ void Unit::gainAP(float amount) {
+
+	 name; nickName;
 
 	currAP += amount;
 

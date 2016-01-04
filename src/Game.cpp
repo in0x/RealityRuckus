@@ -42,6 +42,11 @@ void Game::init() {
 	pAnimationMng->registerAnimation("bullet", pTexMng->textureTable["bullet"]);
 	pAnimationMng->registerAnimation("plasma", pTexMng->textureTable["plasma"]);
 	pAnimationMng->registerAnimation("explosion", pTexMng->textureTable["explosion"]);
+	pAnimationMng->registerAnimation("drain", pTexMng->textureTable["drain"]);
+	pAnimationMng->registerAnimation("heal", pTexMng->textureTable["heal"]);
+	pAnimationMng->registerAnimation("cleave", pTexMng->textureTable["cleave"]);
+	pAnimationMng->registerAnimation("pommelstrike", pTexMng->textureTable["pommelstrike"]);
+	pAnimationMng->registerAnimation("defensive", pTexMng->textureTable["defensive"]);
 
 	pUnitMng = new UnitManager(pLvlMng, pTexMng, pSoundMng, &aiFactory);
 	
@@ -50,7 +55,7 @@ void Game::init() {
 	pUnitMng->pActionMng = pActionMng;
 
 	spawnPlayer(PlayerType::armyfighter, 0, 15);
-	spawnPlayer(PlayerType::armyfighter, -100, -100);
+	spawnPlayer(PlayerType::armyweirdo, -100, -100);
 
 	pLvlMng->genMap(pTexMng, pUnitMng);
 
@@ -126,19 +131,30 @@ void Game::spawnPlayer(PlayerType type, int x, int y) {
 
 	if (pCharacters.size() == 3 ) return; //No more than 4 pcs
 	std::vector<ActionEvent*> playerActions{};
+	UnitAnimations* playerAnimations;
 
 	switch (type) {
 	case PlayerType::armyfighter:
 		playerActions = {
 			new AttackActionEvent("Q. Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5, 5, "plasma"),
-			new ActionEvent("W. Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,0,0),
+			new PommelStrikeEvent("W. Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,1, 6, 3, 5, "pommelstrike"),
 			new ActionEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
 			new MoveActionEvent("R. Move", "Move to a specific position.",pActionMng)
 		};
+		playerAnimations = new UnitAnimations(pTexMng->textureTable["coolarmymove"]);
+		break;
+	case PlayerType::armyweirdo:
+		playerActions = {
+			new AttackActionEvent("Q. Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5, 5, "plasma"),
+			new PommelStrikeEvent("W. Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,1, 6, 3, 5, "pommelstrike"),
+			new ActionEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
+			new MoveActionEvent("R. Move", "Move to a specific position.",pActionMng)
+		};
+		playerAnimations = new UnitAnimations(pTexMng->textureTable["coolarmymove2"]);
 	}
 
 
-	pCharacters.push_back(std::make_shared<Player>(new UnitAnimations(pTexMng->textureTable["coolarmymove"]), UnitType::player, type, playerActions, 25, 25, x, y));
+	pCharacters.push_back(std::make_shared<Player>(playerAnimations, UnitType::player, type, playerActions, 25, 25, x, y));
 
 	pUnitMng->unitList.emplace(pUnitMng->unitList.begin(), pCharacters.back().get());
 
@@ -153,7 +169,7 @@ void Game::update() {
 	std::vector<Unit*> visibleUnits;
 	int oldX = pCharacters[activeP]->x;
 	int oldY = pCharacters[activeP]->y;
-
+	std::vector<Node> path;
 	
 	window.setMouseCursorVisible(false);
 
@@ -178,8 +194,9 @@ void Game::update() {
 
 			// Selects whether player or AI makes next turn
 			if (state == GameState::combat) {
-				
+
 				pGuiMng->updateCombatQueue(*currentCombat);
+				currentCombat->updateListOfUnits();
 				
 				Unit* npc = currentCombat->getFirstUnit();
 				
@@ -187,7 +204,7 @@ void Game::update() {
 				//	currentCombat->addUnitsToCombat(pLoS->getVisibleUnits(pLvlMng, pUnitMng, pCharacters[i].get()));	//adds all visible enemies to the combat
 				//}
 
-				if (!isPlayer(playerVector, npc)) {
+				if (npc->type != UnitType::player) { //!isPlayer(playerVector, npc)) {
 					
 					bool skip = false;
 					auto events = npc->aiComponent->runAI(currentCombat, &pLvlMng->createGraph(), &pUnitMng->pathFinder, npc);
@@ -196,9 +213,9 @@ void Game::update() {
 
 					for (auto& ev : events) {
 						if (ev.type == CombatEventType::Skip || ev.type == CombatEventType::NotValid) {
-							currentCombat->skipTurn();
+							currentCombat->skipTurn(npc);
 							skip = true;
-							continue;
+							break;
 						}
 					}
 
@@ -213,7 +230,7 @@ void Game::update() {
 					pGuiMng->handleCombatEvents(events, playerVector);
 					currentCombat->updateListOfUnits();
 					currentCombat->cycleUnitModifiers(); // A turn passed -> reduce duration of mods by 1
-					currentCombat->replenishUnitAP();
+					//currentCombat->replenishUnitAP();
 				}
 			}
 
@@ -268,7 +285,7 @@ void Game::update() {
 							int yPos = sf::Mouse::getPosition(window).y - pUiMng->getY();
 							oldX = pCharacters[activeP]->x;
 							oldY = pCharacters[activeP]->y;
-							std::vector<Node> path = pUnitMng->moveUnit(xPos, yPos, pCharacters[activeP].get());
+							path = pUnitMng->moveUnit(xPos, yPos, pCharacters[activeP].get());
 							if (path.size() != 0)
 							{
 								Unit* current = pCharacters[activeP].get();
@@ -305,10 +322,12 @@ void Game::update() {
 
 						// If this occurs the player either selected an Action that is not in range or costs more AP than he has
 						// In this case we continue wait for valid input
+
 						if (!std::get<0>(wasValidAction)) {
 							pGuiMng->displayMessage(std::get<1>(wasValidAction), sf::Color{ 255,0,0,255 });
 							actionTookPlace = false;
 						}
+
 						delete userActionInput;
 						userActionInput = nullptr;
 						cursor.setTexture(cursorRegular);
@@ -316,18 +335,18 @@ void Game::update() {
 
 						//Update the GUI with player ap replenishments, without popups
 						if (actionTookPlace) {
-							auto gains = currentCombat->replenishUnitAP();
-							std::vector<CombatEvent> apEvents{};
-							for (auto gainEv : gains) {
+							//auto gains = currentCombat->replenishUnitAP();
+							//std::vector<CombatEvent> apEvents{};
+							//for (auto gainEv : gains) {
 
-								CombatEvent e{ std::get<1>(gainEv), CombatEventType::AP };
+							//	CombatEvent e{ std::get<1>(gainEv), CombatEventType::AP };
 
-								// Since the ActionManager returns loses as positive values I implemented the GUI to asume updates as values
-								// So for displaying gains we need to currently send the negative value (gui adds --2 for example)
-								e.setAPChange(-std::get<0>(gainEv));
+							//	// Since the ActionManager returns loses as positive values I implemented the GUI to asume updates as values
+							//	// So for displaying gains we need to currently send the negative value (gui adds --2 for example)
+							//	e.setAPChange(-std::get<0>(gainEv));
 
-								apEvents.push_back(e);
-							}
+							//	apEvents.push_back(e);
+							//}
 
 							currentCombat->updateListOfUnits();
 							currentCombat->cycleUnitModifiers(); // A turn passed -> reduce duration of mods by 1
@@ -353,10 +372,17 @@ void Game::update() {
 
 					for (int i = 1; i < playerVector.size(); i++)
 					{
+						path.pop_back();
 						playerVector[i]->x = oldX;//playerVector[0]->x;
 						playerVector[i]->y = oldY;// playerVector[0]->y;
-						sf::Vector2i newPos = pLvlMng->findNextFreeTile(playerVector[0]->x, playerVector[0]->y);
+						sf::Vector2i newPos;
+						if (path.size() > 0)
+							newPos = { path.back().x,path.back().y };
+						else
+							newPos = pLvlMng->findNextFreeTile(playerVector[0]->x, playerVector[0]->y);
 						std::vector<Node> path = pUnitMng->moveUnit(newPos.x, newPos.y, playerVector[i]);
+						if (path.size() == 0)
+							pLvlMng->setOccupied(newPos.x, newPos.y, true);
 						pAnimationMng->registerMovement(playerVector[i]->sprite, new DrawableUnit{ (float)playerVector[0]->x, (float)playerVector[0]->y, playerVector[i]->sprite->sprite }, path, 0.5);
 						visibleUnits.push_back(playerVector[i]);
 					}

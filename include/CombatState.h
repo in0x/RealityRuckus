@@ -2,13 +2,6 @@
 #include "Unit.h"
 #include <algorithm>
 
-//class Unit;
-
-//struct CompareUnitApPtr {
-//public:
-//	bool operator()(Unit* lhs, Unit* rhs);
-//} unitComparer;
-
 class CombatState {
 public:
 	
@@ -20,8 +13,8 @@ public:
 	void updateListOfUnits();
 	void listUnits();
 	void cycleUnitModifiers();
+	void skipTurn(Unit * skipper);
 	void addUnitsToCombat(std::vector<Unit*>);
-	void skipTurn();
 
 	bool isDone();
 
@@ -31,12 +24,6 @@ public:
 private:
 
 	void removeUnit(Unit* unitToRemove);
-
-	//struct CompareUnitApPtr 
-	//{
-	//	bool operator()(Unit* lhs, Unit* rhs) {
-	//		return lhs->currAP > rhs->currAP;
-	//	}
-	//} unitComparer; 
+ 
 };
 
