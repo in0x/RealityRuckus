@@ -4,6 +4,10 @@
 #include "tile.h"
 #include "UnitManager.h"
 
+class lvlManager;
+class UnitManager;
+
+
 class OrthogonalLineOfSight {
 public:
 	std::vector<Unit*> getVisibleUnits(lvlManager*, UnitManager*, Unit* unit);

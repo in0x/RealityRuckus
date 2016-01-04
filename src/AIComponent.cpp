@@ -102,7 +102,7 @@ inline int AIUtility::distance(sf::Vector2i unit1pos, sf::Vector2i unitpos2) {
 }
 
 // Leeway defines the maximum distance a move position can be away from the target
-sf::Vector2i AIUtility::findFieldToMoveTo(sf::Vector2i desired, int leeway, AIResources& util, int minDistance) {
+sf::Vector2i AIUtility::findFieldToMoveTo(sf::Vector2i desired, int leeway, AIResources& util, Unit* target, int minDistance) {
 	auto path = AIUtility::getPath(util, desired);
 	sf::Vector2i current = { util.unit->x, util.unit->y };
 		
@@ -123,8 +123,12 @@ sf::Vector2i AIUtility::findFieldToMoveTo(sf::Vector2i desired, int leeway, AIRe
 				if (newTarget.x > 0 && newTarget.y > 0 && newTarget.x < 30 && newTarget.y < 30) {
 
 					if (util.map->map[desired.x + x][desired.y + y].accessible == true && util.map->map[desired.x + x][desired.y + y].occupied == true) {
-						if (getPath(util, { desired.x + x, desired.y + y }).size() < 40)
+						if (getPath(util, { desired.x + x, desired.y + y }).size() < 40) {
+
+							auto visibUnits = util.losFunc(target);
+
 							return{ desired.x + x, desired.y + y };
+						}
 					}
 				}
 			}
@@ -136,8 +140,8 @@ sf::Vector2i AIUtility::findFieldToMoveTo(sf::Vector2i desired, int leeway, AIRe
 }
 
 
-std::vector<CombatEvent> AIComponent::runAI(CombatState* combat, WeightedGraph* map, aStarSearch* pathFinder, Unit* unit) {
-	util = { combat, map, pathFinder, unit };
+std::vector<CombatEvent> AIComponent::runAI(CombatState* combat, WeightedGraph* map, aStarSearch* pathFinder, std::function<std::vector<Unit*>(Unit*)> losFunc, Unit* unit) {
+	util ={ combat, map, pathFinder, unit, losFunc };
 	return ai->run(*this);
 }
 
@@ -195,21 +199,21 @@ std::vector<CombatEvent> MeleeFighterAI::run(AIComponent& component) {
 
 	
 	Command actions{};
-	/*
+	
 	if (component.util.unit->currHP / component.util.unit->maxHP >= 0.2) {
-	*/
-	actions = component.evalOffSpecial->evaluate(component);
+	
+		actions = component.evalOffSpecial->evaluate(component);
 
-	if (actions.commands[0] != CommandType::None) {
-		return AIUtility::runCommands(actions, component.util.unit);
+		if (actions.commands[0] != CommandType::None) {
+			return AIUtility::runCommands(actions, component.util.unit);
+		}
+
+		actions = component.evalPhysAttack->evaluate(component);
+
+		if (actions.commands[0] != CommandType::None) {
+			return AIUtility::runCommands(actions, component.util.unit);
+		}
 	}
-
-	actions = component.evalPhysAttack->evaluate(component);
-
-	if (actions.commands[0] != CommandType::None) {
-		return AIUtility::runCommands(actions, component.util.unit);
-	}
-	//}
 
 	// If neither a physical attack or a cleave are viable we have to evaluate 
 	// if it is ok to cast the self buff in this position or if we should move
@@ -266,7 +270,7 @@ Command MeleeAttack::evaluate(AIComponent& component) {
 		target = enemies[0].unit;
 
 		auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ target->x, target->y }, range / 2);
-		auto moveTo = AIUtility::findFieldToMoveTo( vec, range, util);
+		auto moveTo = AIUtility::findFieldToMoveTo( vec, range, util, target);
 
 		if (moveTo.x != -1) { //field found
 
@@ -281,7 +285,7 @@ Command MeleeAttack::evaluate(AIComponent& component) {
 			//auto path = AIUtility::getPath(util, { other.unit->x, other.unit->y });
 
 			auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ other.unit->x, other.unit->y }, range / 2);;
-			auto moveTo = AIUtility::findFieldToMoveTo(vec, range, util);
+			auto moveTo = AIUtility::findFieldToMoveTo(vec, range, util, other.unit);
 
 			auto path = AIUtility::getPath(util, { moveTo });
 
@@ -292,7 +296,7 @@ Command MeleeAttack::evaluate(AIComponent& component) {
 				target = other.unit;
 
 				auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ target->x, target->y }, range / 2);
-				auto moveTo = AIUtility::findFieldToMoveTo(vec, range, util);
+				auto moveTo = AIUtility::findFieldToMoveTo(vec, range, util, other.unit);
 
 
 				if (moveTo.x != -1) { //field found
@@ -330,7 +334,7 @@ Command CleaveAttack::evaluate(AIComponent& component) {
 
 		target = enemies[0].unit;
 		auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ target->x, target->y }, range / 2);;
-		auto loc = AIUtility::findFieldToMoveTo(vec, range, util);
+		auto loc = AIUtility::findFieldToMoveTo(vec, range, util, target);
 
 		if (range == 1) {
 			actions = { { CommandType::Physical },{ { target->x, target->y } } };
@@ -349,7 +353,7 @@ Command CleaveAttack::evaluate(AIComponent& component) {
 		target = other.unit;	//needs a target here in order not to crash
 
 		auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ other.unit->x, other.unit->y }, range / 2);
-		auto moveTo = AIUtility::findFieldToMoveTo(vec, range, util);
+		auto moveTo = AIUtility::findFieldToMoveTo(vec, range, util, other.unit);
 
 		auto path = AIUtility::getPath(util, moveTo);
 
@@ -458,7 +462,7 @@ Command ApplyAPDebuff::evaluate(AIComponent& component) {
 	// If a unit is already in range, apply the debuff to it
 	if (enemies[0].distance <= range) {
 		target = enemies[0].unit;
-		auto moveTo = AIUtility::findFieldToMoveTo(sf::Vector2i{ target->x, target->y } + AIUtility::getRandMoveDir(sf::Vector2i{ target->x, target->y }, range / 2),range, util);
+		auto moveTo = AIUtility::findFieldToMoveTo(sf::Vector2i{ target->x, target->y } + AIUtility::getRandMoveDir(sf::Vector2i{ target->x, target->y }, range / 2),range, util, target);
 
 		if (moveTo.x != -1) { //field found
 
@@ -472,7 +476,7 @@ Command ApplyAPDebuff::evaluate(AIComponent& component) {
 
 		for (auto& other : enemies) {
 
-			auto moveTo = AIUtility::findFieldToMoveTo(sf::Vector2i{ other.unit->x, other.unit->y } +AIUtility::getRandMoveDir(sf::Vector2i{ other.unit->x, other.unit->y }, range / 2), range, util);
+			auto moveTo = AIUtility::findFieldToMoveTo(sf::Vector2i{ other.unit->x, other.unit->y } + AIUtility::getRandMoveDir(sf::Vector2i{ other.unit->x, other.unit->y }, range / 2), range, util, other.unit);
 			
 			auto path = AIUtility::getPath(util, moveTo);
 
@@ -519,7 +523,7 @@ Command HealFriendly::evaluate(AIComponent& component) {
 
 			else {
 				
-				auto moveTo = AIUtility::findFieldToMoveTo({ ally.unit->x, ally.unit->y - range }, range, component.util);
+				auto moveTo = AIUtility::findFieldToMoveTo({ ally.unit->x, ally.unit->y - range }, range, component.util, ally.unit);
 
 				if (moveTo.x != -1) { //field found
 

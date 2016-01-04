@@ -163,6 +163,10 @@ void Game::spawnPlayer(PlayerType type, int x, int y) {
 	playerVector.push_back(pCharacters.back().get());
 }
 
+std::vector<Unit*> Game::pathFindFuncPtr(Unit* unit) {
+	return pLoS->getVisibleUnits(pLvlMng, pUnitMng, unit);
+}
+
 void Game::update() {
 	int mousex, mousey = 0;
 
@@ -184,6 +188,11 @@ void Game::update() {
 	bool aiTurn = false;
 
 	sf::Event event {};
+
+	auto losFunc = [this](Unit* unit) {
+		return this->pLoS->getVisibleUnits(this->pLvlMng, pUnitMng, unit);
+	};
+
 
 	// Main Game Loop
 	while (window.isOpen())
@@ -207,7 +216,7 @@ void Game::update() {
 				if (npc->type != UnitType::player) { //!isPlayer(playerVector, npc)) {
 					
 					bool skip = false;
-					auto events = npc->aiComponent->runAI(currentCombat, &pLvlMng->createGraph(), &pUnitMng->pathFinder, npc);
+					auto events = npc->aiComponent->runAI(currentCombat, &pLvlMng->createGraph(), &pUnitMng->pathFinder, losFunc, npc);
 
 					aiTurn = true;
 
@@ -272,6 +281,7 @@ void Game::update() {
 					{
 						pUiMng->setX(pUiMng->getX() + event.mouseMove.x - mousex);
 						pUiMng->setY(pUiMng->getY() + event.mouseMove.y - mousey);
+						
 						mousex = event.mouseMove.x;
 						mousey = event.mouseMove.y;
 					}
@@ -283,17 +293,23 @@ void Game::update() {
 						{
 							int xPos = sf::Mouse::getPosition(window).x - pUiMng->getX();
 							int yPos = sf::Mouse::getPosition(window).y - pUiMng->getY();
+
 							oldX = pCharacters[activeP]->x;
 							oldY = pCharacters[activeP]->y;
-							path = pUnitMng->moveUnit(xPos, yPos, pCharacters[activeP].get());
+
+							// Set lookForUnits true to discover units along the path 
+							path = pUnitMng->moveUnit(xPos, yPos, pCharacters[activeP].get(), pLoS, true);
+
 							if (path.size() != 0)
 							{
 								Unit* current = pCharacters[activeP].get();
+
 								pAnimationMng->registerMovement(current->sprite, new DrawableUnit{ (float)current->x, (float)current->y, current->sprite->sprite }, path, 0.5);
+								
 								pGuiMng->updatePlayerPositionMap(oldX, oldY, pCharacters[activeP]->x, pCharacters[activeP]->y);
+								
 								visibleUnits = pLoS->getVisibleUnits(pLvlMng, pUnitMng, pCharacters[activeP].get());
 							}
-							//pGuiMng->displayMessage("Player moved", sf::Color{255,0,0,255});
 						}
 					}
 				}

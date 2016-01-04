@@ -102,37 +102,7 @@ std::vector<DrawableUnit> UnitManager::getUnits() {
     return dUnits;
 }
 
-/*int UnitManager::moveUnit(int x, int y, Unit* unit) {
-
-	if (x > 30)
-		x /= 128;
-	if (y > 30)
-		y /= 128;
-
-	if (!(lvl->isAccessible(x, y))) {
-		return 0;
-	}
-
-	else if ((lvl->isOccupied(x, y))) {
-		return 0;
-	}
-
-	std::vector<Node> path = pathFinder.findPath(Node{unit->x, unit->y}, Node{ x, y }, lvl->createGraph());
-
-	Node end = path.back();
-	
-	if (end.x == 0 && end.y == 0)
-		return 0;
-
-	lvl->moveUnitInMap(end.x, end.y, unit);
-
-	unit->x = end.x;
-	unit->y = end.y;
-
-	return path.size();
-}*/
-
-std::vector<Node> UnitManager::moveUnit(int x, int y, Unit* unit) {
+std::vector<Node> UnitManager::moveUnit(int x, int y, Unit* unit, OrthogonalLineOfSight* los, bool lookForUnits) {
 	if (x > 30)
 		x /= 128;
 	if (y > 30)
@@ -155,6 +125,28 @@ std::vector<Node> UnitManager::moveUnit(int x, int y, Unit* unit) {
 	if (end.x == 0 && end.y == 0)
 		return std::vector<Node>();
 
+	if (lookForUnits) {
+
+		std::vector<Node> newPath{};
+
+		for (auto& node : path) {
+
+			newPath.push_back(node);
+			
+			unit->x = node.x;
+			unit->y = node.y;
+
+			if (los->getVisibleUnits(lvl, this, unit).size() > 1) {
+				
+				end = newPath.back();
+
+				return newPath;
+
+			}
+		}
+	
+	}
+	
 	lvl->moveUnitInMap(end.x, end.y, unit);
 
 	unit->x = end.x;
@@ -200,10 +192,8 @@ void UnitManager::removeUnit(Unit* unitToRemove) {
 	die.play();
 }
 
-
-void UnitManager::setPlayer(Player * p)
+void UnitManager::setPlayer(Unit * p)
 {
-	player = p;
 	unitList.push_back(p);
 }
 

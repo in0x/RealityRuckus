@@ -5,6 +5,8 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
 
+class UnitAnimations;
+
 enum class PlayerType {
 	armyfighter,
 	armyweirdo

@@ -2,7 +2,6 @@
 #include "Unit.h"
 #include "lvlManager.h"
 #include "textureManager.h"
-#include "player.h"
 #include "DrawableUnit.h"
 #include "SoundManager.h"
 #include "aStarSearch.h"
@@ -10,8 +9,11 @@
 #include "CombatState.h"
 #include "AIComponent.h"
 #include "ActionEvent.h"
+#include "OrthogonalLineOfSight.h"
 
 class lvlManager;
+class OrthogonalLineOfSight;
+class AIFactory;
 
 class UnitManager {
 public:
@@ -21,21 +23,21 @@ public:
 	std::vector<DrawableUnit> getUnits();
 	std::vector<Unit*> unitList;
 	 
-	Player* player;
+	//Player* player;
 	aStarSearch pathFinder;
 	ActionManager* pActionMng;
 
 	sf::SoundBuffer dieBuffer;
 	sf::Sound die;
 
-	std::vector<Node> moveUnit(int x, int y, Unit* unit);
+	std::vector<Node> moveUnit(int x, int y, Unit* unit, OrthogonalLineOfSight* los = nullptr, bool lookForUnits = false);
 
 	Unit* spawnUnit(UnitType, int, int, bool);
 
 	bool isDead(int);
 	void update(sf::Time time);
 	bool damageUnit(Unit * unit, float hp);
-	void setPlayer(Player* p);
+	void setPlayer(Unit* p);
 	void removeAP(Unit* unit, int ap);
 	std::string getRandomName();
 

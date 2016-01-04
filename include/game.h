@@ -17,6 +17,7 @@
 
 class GUImanager; //forward declartion so game and gui can use each other
 
+
 class Game {
 public:
 	Game();
@@ -33,6 +34,10 @@ public:
 
 	const int WINDOW_WIDTH = 1920;
 	const int WINDOW_HEIGHT = 1080;
+
+	OrthogonalLineOfSight* pLoS = nullptr;
+	lvlManager* pLvlMng = nullptr;
+	UnitManager* pUnitMng = nullptr;
 	
 private: 
 	enum class InputState {normal, WaitingForActionInput};
@@ -46,13 +51,10 @@ private:
 	sf::Texture cursorAttack;
 	sf::Sprite cursor;
 
-	lvlManager* pLvlMng = nullptr;
-	UnitManager* pUnitMng = nullptr;
 	SoundManager* pSoundMng = nullptr;
 	TextureManager* pTexMng = nullptr;
 	UIManager* pUiMng = nullptr;
 	ActionManager* pActionMng = nullptr;
-	OrthogonalLineOfSight* pLoS = nullptr;
 	GUImanager* pGuiMng = nullptr;
 	CombatState* currentCombat = nullptr;
 	ActionManagerInput* userActionInput = nullptr;
@@ -67,5 +69,7 @@ private:
 	std::tuple<bool, std::string> updateActionManager(ActionManagerInput inputEvent);
 	
 	std::vector<std::shared_ptr<Player>> pCharacters{};
+
+	std::vector<Unit*> pathFindFuncPtr(Unit* unit);
 
 };

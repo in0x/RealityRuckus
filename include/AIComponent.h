@@ -9,6 +9,8 @@ class CombatState;
 class AIComponent;
 class WeightedGraph;
 class aStarSearch;
+class OrthogonalLineOfSight;
+class Unit;
 
 enum class CommandType {
 	None = -1,
@@ -39,6 +41,7 @@ public:
 	WeightedGraph* map;
 	aStarSearch* pathFinder;
 	Unit* unit;
+	std::function<std::vector<Unit*>(Unit*)> losFunc;
 };
 
 
@@ -50,7 +53,7 @@ public:
 
 	static inline std::vector<Node> getPath(AIResources& util, sf::Vector2i target);
 
-	static sf::Vector2i findFieldToMoveTo(sf::Vector2i desired, int leeway, AIResources& util, int minDistance = 0);
+	static sf::Vector2i findFieldToMoveTo(sf::Vector2i desired, int leeway, AIResources& util, Unit* target, int minDistance = 0);
 
 	static std::vector<CombatEvent> runCommands(Command& actions, Unit* unit);
 
@@ -89,7 +92,7 @@ public:
 class AIComponent {
 public:
 	// Call this to let the unit evalute and execute its next move
-	std::vector<CombatEvent> runAI(CombatState* combat, WeightedGraph* map, aStarSearch* pathfinder, Unit* unit);
+	std::vector<CombatEvent> runAI(CombatState* combat, WeightedGraph* map, aStarSearch* pathfinder, std::function<std::vector<Unit*>(Unit*)> losFunc, Unit* target);
 
 	AIComponent(std::shared_ptr<UnitAI> eval, std::shared_ptr<SkillAI> physAI, std::shared_ptr<SkillAI> offSpecAI, 
 		std::shared_ptr<SkillAI> defSpecAI, std::shared_ptr<SkillAI> moveAI) :

@@ -3,11 +3,11 @@
 #include "unitType.h"
 #include "textureManager.h"
 #include "ActionEvent.h"
-#include "AIComponent.h"
 #include <queue>
 #include <memory>
 #include <iostream>
 #include "UnitAnimations.hpp"
+#include "AIComponent.h"
 
 class AIComponent;
 
