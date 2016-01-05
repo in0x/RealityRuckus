@@ -7,11 +7,12 @@
 #include <memory>
 #include <iostream>
 #include "UnitAnimations.hpp"
+#include "Modifier.h"
 #include "AIComponent.h"
 
-class AIComponent;
+//class AIComponent;
 
-enum class ModifierType {
+/*enum class ModifierType {
 	HPLoss,
 	HPGain,
 	APLoss,
@@ -24,7 +25,7 @@ public:
 	ModifierType type;
 	int rounds;
 	std::function<void(float&)> func;
-};
+};*/
 
 class Unit
 {

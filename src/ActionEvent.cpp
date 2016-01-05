@@ -146,4 +146,84 @@
 		return events;
 	}
 
+	BuffEvent::BuffEvent(std::string name, std::string description, ActionManager * actionmanager, int range, int cost, Modifier mod, std::string animation)
+		: ActionEvent(name, description, actionmanager, range, cost,0, animation) {
+		this->mod = mod;
+	}
 
+	std::vector<CombatEvent> BuffEvent::doAction(Unit * sender, int x, int y)
+	{
+
+		if (x > 30)
+			x /= 128;
+		if (y > 30)
+			y /= 128;
+
+		std::vector<CombatEvent> events = actionmanager->applyBuff(sender, x, y, mod, range, cost);
+
+		if (events[0].type != CombatEventType::NotValid) {
+			if (range <= 1)
+				actionmanager->playAnimation(animation, sf::Vector2f(x, y), sf::Vector2f(x, y), 2.4);
+			else
+				actionmanager->playAnimation(animation, sf::Vector2f(sender->x, sender->y), sf::Vector2f(x, y), 0.2);
+
+			/*float d_cost = cost;
+			sender->applyModifiers(ModifierType::APLoss, d_cost);
+
+			CombatEvent ce = CombatEvent(sender, CombatEventType::AP);
+			sender->loseAP(d_cost);
+			ce.setAPChange(d_cost);
+			events.push_back(ce);
+			*/
+		}
+
+		ActionEvent::doAction(sender, x, y);
+
+		return events;
+
+	}
+
+	TurnEndingBuffEvent::TurnEndingBuffEvent(std::string name, std::string description, ActionManager * actionmanager, int range, int cost, TurnEndingBuff* func, std::string animation)
+		: ActionEvent(name, description, actionmanager, range, cost, 0, animation) {
+		this->func = func;
+	}
+
+	TurnEndingBuffEvent::~TurnEndingBuffEvent()
+	{
+		delete func;
+	}
+
+	std::vector<CombatEvent> TurnEndingBuffEvent::doAction(Unit * sender, int x, int y)
+	{
+		if (x > 30)
+			x /= 128;
+		if (y > 30)
+			y /= 128;
+
+		int newCost = sender->currAP;
+
+		std::vector<CombatEvent> events = actionmanager->applyBuff(sender, x, y, func->getModifier(newCost), range, newCost);
+
+		if (events[0].type != CombatEventType::NotValid) {
+			if (range <= 1)
+				actionmanager->playAnimation(animation, sf::Vector2f(x, y), sf::Vector2f(x, y), 2.4);
+			else
+				actionmanager->playAnimation(animation, sf::Vector2f(sender->x, sender->y), sf::Vector2f(x, y), 0.2);
+
+			/*float d_cost = cost;
+			sender->applyModifiers(ModifierType::APLoss, d_cost);
+
+			CombatEvent ce = CombatEvent(sender, CombatEventType::AP);
+			sender->loseAP(d_cost);
+			ce.setAPChange(d_cost);
+			events.push_back(ce);
+			*/
+		}
+
+		ActionEvent::doAction(sender, x, y);
+
+		return events;
+	}
+
+
+	

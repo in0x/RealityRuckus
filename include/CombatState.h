@@ -15,11 +15,12 @@ public:
 	void cycleUnitModifiers();
 	void skipTurn(Unit * skipper);
 	void addUnitsToCombat(std::vector<Unit*>);
+	std::vector<CombatEvent> endTurn();
 
 	bool isDone();
 
 	std::vector<Unit*> unitsInCombat;
-	std::vector<std::tuple<int, Unit*>> replenishUnitAP();
+	//std::vector<std::tuple<int, Unit*>> replenishUnitAP();
 	
 private:
 

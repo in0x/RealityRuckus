@@ -101,7 +101,6 @@ std::vector<CombatEvent> ActionManager::damageUnit(Unit * unit, int x, int y, fl
 	//else
 	{
 		damagedUnit->applyModifiers(ModifierType::HPLoss, hp);
-
 		bool unitDied = unitManager->damageUnit(damagedUnit, hp);
 		currentCombat->updateListOfUnits();
 		CombatEvent ce = { damagedUnit, CombatEventType::HP };
@@ -157,6 +156,41 @@ std::vector<CombatEvent> ActionManager::changeAP(Unit * unit, int x, int y, floa
 	}
 
 	return events;
+}
+
+std::vector<CombatEvent> ActionManager::applyBuff(Unit * unit, int x, int y, Modifier mod, int range, int cost)
+{
+	std::vector<CombatEvent> events;
+
+	events = isValidAction(x, y, unit, range, cost);
+
+	if (events[0].type == CombatEventType::NotValid)
+		return events;
+
+	events = {};
+
+	Unit* affectedUnit = currentCombat->findUnit(x, y);
+
+	if (affectedUnit == nullptr)
+	{
+		events.push_back(CombatEvent(unit, CombatEventType::NotValid, "No Target here"));
+		return events;
+	}
+	else
+	{
+		affectedUnit->addModifier(mod);
+
+		float d_cost = cost;
+		affectedUnit->applyModifiers(ModifierType::APLoss, d_cost);
+		affectedUnit->loseAP(d_cost);
+		currentCombat->updateListOfUnits();
+		CombatEvent ce = { affectedUnit, CombatEventType::AP };
+		ce.setAPChange(d_cost);
+		events.push_back(ce);
+	}
+
+	return events;
+
 }
 
 

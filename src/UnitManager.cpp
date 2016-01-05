@@ -64,7 +64,7 @@ Unit* UnitManager::spawnUnit(UnitType u, int x, int y, bool isAccessible) {
 			};
 			break;
 		case robotfly:
-			unit = new Unit(30, 25, new UnitAnimations(tex->textureTable["robotflymove"]), aiFactory->getAIComponent("rangedcaster"), x, y, robotfly);
+			unit = new Unit(30, 15, new UnitAnimations(tex->textureTable["robotflymove"]), aiFactory->getAIComponent("rangedcaster"), x, y, robotfly);
 			unit->learnedActions = {
 				new AttackActionEvent("Light Ranged Attack", "It hurts, just enough to be annoying.\n\nRange: 6\tDamage: 3",pActionMng, 6, 2, 3, "bullet"),
 				new APchangeActionEvent("Draining Shot", "This stuff is potent.\n\nRange: 4\tAP loss: 8",pActionMng,4,8,8),

@@ -129,8 +129,12 @@ void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vecto
 
 		index = findPlayer(playerVector, e.affected);
 
-		if (e.type == CombatEventType::UnitDied)
+		if (e.type == CombatEventType::UnitDied) {
 			std::cout << "Unit died" << std::endl;
+			if (e.affected->type == player) {
+				playerVector.erase(playerVector.begin() + index, playerVector.begin() + index + 1);
+			}
+		}
 
 		if (index != -1) {
 			if (e.type == 1) {
@@ -144,8 +148,8 @@ void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vecto
 			}
 
 			else if (e.type == CombatEventType::HP) {
-				updateHPbar(index, e.HPChange);
-				updateHPbar(index, e.HPChange, true);
+				updateHPbar(index, e.affected->currHP);
+				updateHPbar(index, e.affected->currHP, true);
 				break;
 			}
 		}
@@ -264,7 +268,7 @@ void GUImanager::updateHPbar(int index, int change, bool combat) {
 		return;
 
 	auto hpBar = dynamic_cast<tgui::ProgressBar*>(widget.get());
-	hpBar->setValue(hpBar->getValue() - change);
+	hpBar->setValue(change);
 
 	auto barText = dynamic_cast<tgui::Label*>(text.get());
 	barText->setText(std::to_string(hpBar->getValue()) + " / " + std::to_string(hpBar->getMaximum()) + "HP");

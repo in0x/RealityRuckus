@@ -13,6 +13,7 @@ public:
 	std::vector<CombatEvent> moveUnit(Unit* unit, int x, int y);
 	std::vector<CombatEvent> damageUnit(Unit* unit, int x, int y, float hp, int range, int cost);
 	std::vector<CombatEvent> changeAP(Unit* unit, int x, int y, float ap, int range, int cost);
+	std::vector<CombatEvent> applyBuff(Unit* unit, int x, int y, Modifier mod, int range, int cost);
 
 	void setCombatState(CombatState * newCombat);
 

@@ -38,6 +38,19 @@ std::ostream& operator<<(std::ostream& os, const Unit& unit) {
 	return os;
 }
 
+std::vector<CombatEvent> CombatState::endTurn()
+{
+	std::vector<CombatEvent> events;
+	for (auto& unit : unitsInCombat)
+	{
+		CombatEvent ev = CombatEvent(unit, CombatEventType::AP);
+		ev.setAPChange(unit->replenishAP());
+		events.push_back(ev);
+	}
+	cycleUnitModifiers();
+	updateListOfUnits();
+	return events;
+}
 
 void CombatState::updateListOfUnits() {
 	//std::cout << "before" << std::endl;
@@ -92,7 +105,7 @@ void CombatState::removeUnit(Unit* unitToRemove) {
 	unitsInCombat.erase(it);
 }
 
-std::vector<std::tuple<int, Unit*>> CombatState::replenishUnitAP() {
+/*std::vector<std::tuple<int, Unit*>> CombatState::replenishUnitAP() {
 
 	std::vector<std::tuple<int, Unit*>> apGains{};
 
@@ -102,7 +115,7 @@ std::vector<std::tuple<int, Unit*>> CombatState::replenishUnitAP() {
 	}
 
 	return apGains;
-}
+}*/
 
 Unit* CombatState::findUnit(int x, int y) {
 

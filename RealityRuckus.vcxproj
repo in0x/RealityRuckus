@@ -182,6 +182,7 @@
     <ClInclude Include="include\Graph.h" />
     <ClInclude Include="include\GuiManager.h" />
     <ClInclude Include="include\lvlManager.h" />
+    <ClInclude Include="include\Modifier.h" />
     <ClInclude Include="include\MyPriorityQueue.h" />
     <ClInclude Include="include\Node.h" />
     <ClInclude Include="include\OrthogonalLineOfSight.h" />

@@ -133,12 +133,38 @@ void Game::spawnPlayer(PlayerType type, int x, int y) {
 	std::vector<ActionEvent*> playerActions{};
 	UnitAnimations* playerAnimations;
 
+	/*std::function<Modifier(int)> func = [&](int ap) {
+		std::cout << "generated with " << ap << "% chance." << std::endl;
+		std::function<void(float&)> func = [&](float& num) {
+			std::cout << "attacked, " << ap << "% chance." << std::endl;
+			if (rand() % 100 + 1 < ap) {
+				num = 0;
+				std::cout << "MISSED, " << ap << "% chance." << std::endl;
+			}
+		};
+		float dmg = 25;
+		func(dmg);
+		Modifier mod = { ModifierType::HPLoss, 1, func };
+		return mod;
+	};
+
+
+	/*std::function<void(float&)> func = [&](float& num) {
+		if (rand() % 100 + 1 < 33) {
+			num = 0;
+			std::cout << "MISSED LOL" << std::endl;
+		}
+	};
+	Modifier mod = { ModifierType::HPLoss, 1, func };*/
+
 	switch (type) {
 	case PlayerType::armyfighter:
 		playerActions = {
 			new AttackActionEvent("Q. Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5, 5, "plasma"),
 			new PommelStrikeEvent("W. Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,1, 6, 3, 5, "pommelstrike"),
-			new ActionEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
+			//new ActionEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
+			//new BuffEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0,mod,"defensive"),
+			new TurnEndingBuffEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0,new TurnEndingBuff(),"defensive"),
 			new MoveActionEvent("R. Move", "Move to a specific position.",pActionMng)
 		};
 		playerAnimations = new UnitAnimations(pTexMng->textureTable["coolarmymove"]);
@@ -147,7 +173,9 @@ void Game::spawnPlayer(PlayerType type, int x, int y) {
 		playerActions = {
 			new AttackActionEvent("Q. Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5, 5, "plasma"),
 			new PommelStrikeEvent("W. Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,1, 6, 3, 5, "pommelstrike"),
-			new ActionEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
+			//new ActionEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
+			//new BuffEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0,mod,"defensive"),
+			new TurnEndingBuffEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0,new TurnEndingBuff(),"defensive"),
 			new MoveActionEvent("R. Move", "Move to a specific position.",pActionMng)
 		};
 		playerAnimations = new UnitAnimations(pTexMng->textureTable["coolarmymove2"]);
@@ -157,6 +185,9 @@ void Game::spawnPlayer(PlayerType type, int x, int y) {
 	pCharacters.push_back(std::make_shared<Player>(playerAnimations, UnitType::player, type, playerActions, 25, 25, x, y));
 
 	pUnitMng->unitList.emplace(pUnitMng->unitList.begin(), pCharacters.back().get());
+
+	if (x >= 0 && y >= 0 && x < 30 && y < 30)
+		pLvlMng->setOccupied(x, y, true);
 
 	pCharacters.back()->nickName = pUnitMng->getRandomName();
 
@@ -212,9 +243,20 @@ void Game::update() {
 				//for (int i = 0; i < pCharacters.size(); i++) {
 				//	currentCombat->addUnitsToCombat(pLoS->getVisibleUnits(pLvlMng, pUnitMng, pCharacters[i].get()));	//adds all visible enemies to the combat
 				//}
+				if (npc->currAP == 0)	//no one has any AP left, turn over
+				{
+					pGuiMng->handleCombatEvents(currentCombat->endTurn(),playerVector);
+					continue;
+				}
+				if (playerVector.size() > 0) {	//checks and removes the players in playerVector since this is not done and the other functions cannot access it
+					for (int i = 0; i < playerVector.size(); i++) {
+						if (playerVector[i]->currHP <= 0)
+							playerVector.erase(playerVector.begin() + i, playerVector.begin() + i + 1);
+					}
+				}
 
 				if (npc->type != UnitType::player) { //!isPlayer(playerVector, npc)) {
-					
+
 					bool skip = false;
 					auto events = npc->aiComponent->runAI(currentCombat, &pLvlMng->createGraph(), &pUnitMng->pathFinder, losFunc, npc);
 
@@ -238,7 +280,7 @@ void Game::update() {
 
 					pGuiMng->handleCombatEvents(events, playerVector);
 					currentCombat->updateListOfUnits();
-					currentCombat->cycleUnitModifiers(); // A turn passed -> reduce duration of mods by 1
+					//currentCombat->cycleUnitModifiers(); // A turn passed -> reduce duration of mods by 1
 					//currentCombat->replenishUnitAP();
 				}
 			}
@@ -365,7 +407,7 @@ void Game::update() {
 							//}
 
 							currentCombat->updateListOfUnits();
-							currentCombat->cycleUnitModifiers(); // A turn passed -> reduce duration of mods by 1
+							//currentCombat->cycleUnitModifiers(); // A turn passed -> reduce duration of mods by 1
 
 						//pGuiMng->handleCombatEvents(apEvents, playerVector, false);
 						}
@@ -389,16 +431,25 @@ void Game::update() {
 					for (int i = 1; i < playerVector.size(); i++)
 					{
 						path.pop_back();
+						bool p1nomove = false;
 						playerVector[i]->x = oldX;//playerVector[0]->x;
 						playerVector[i]->y = oldY;// playerVector[0]->y;
 						sf::Vector2i newPos;
 						if (path.size() > 0)
 							newPos = { path.back().x,path.back().y };
 						else
+						{
 							newPos = pLvlMng->findNextFreeTile(playerVector[0]->x, playerVector[0]->y);
+							p1nomove = true;
+						}
 						std::vector<Node> path = pUnitMng->moveUnit(newPos.x, newPos.y, playerVector[i]);
 						if (path.size() == 0)
+						{
 							pLvlMng->setOccupied(newPos.x, newPos.y, true);
+						}
+						if(p1nomove)
+							pLvlMng->setOccupied(oldX, oldY, true);
+
 						pAnimationMng->registerMovement(playerVector[i]->sprite, new DrawableUnit{ (float)playerVector[0]->x, (float)playerVector[0]->y, playerVector[i]->sprite->sprite }, path, 0.5);
 						visibleUnits.push_back(playerVector[i]);
 					}
@@ -420,6 +471,7 @@ void Game::update() {
 						//std::vector<Node> path = pUnitMng->moveUnit(playerVector[0]->x, playerVector[0]->y, playerVector[i]);
 						//std::cout << path.size() << std::endl;
 						//pAnimationMng->registerMovement(playerVector[i]->sprite, new DrawableUnit{ (float)playerVector[i]->x, (float)playerVector[i]->y, playerVector[i]->sprite->sprite }, path, 0.5);
+						pGuiMng->handleCombatEvents(currentCombat->endTurn(), playerVector);
 						pLvlMng->setOccupied(playerVector[i]->x, playerVector[i]->y, false);
 						playerVector[i]->x = -100;
 						playerVector[i]->y = -100;

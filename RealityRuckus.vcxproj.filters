@@ -63,6 +63,7 @@
     <ClInclude Include="include\drawableItem.h" />
     <ClInclude Include="include\UnitAnimations.hpp" />
     <ClInclude Include="include\AIComponent.h" />
+    <ClInclude Include="include\Modifier.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\run.sh" />

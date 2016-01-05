@@ -167,6 +167,5 @@ void Unit::setAPGainPerRound(float ap) {
 }
 
 int Unit::replenishAP() {
-	gainAP(apGain);
-	return apGain;
+	return currAP=maxAP;
 }
