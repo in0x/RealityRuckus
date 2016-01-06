@@ -47,6 +47,8 @@
 		if (y > 30)
 			y /= 128;
 
+		name;
+
 		std::vector<CombatEvent> events = actionmanager->damageUnit(sender, x , y, damage, range, cost);
 		
 		if (events[0].type != CombatEventType::NotValid) {
@@ -84,6 +86,10 @@
 		std::vector<CombatEvent> events = actionmanager->changeAP(sender, x, y, damage, range, cost);
 
 		if (events[0].type != CombatEventType::NotValid) {
+			if (range == 1)
+				actionmanager->playAnimation(animation, sf::Vector2f(x, y), sf::Vector2f(x, y), 2.4);
+			else
+				actionmanager->playAnimation(animation, sf::Vector2f(sender->x, sender->y), sf::Vector2f(x, y), 0.2);
 
 			float d_cost = cost;
 			sender->applyModifiers(ModifierType::APLoss, d_cost);

@@ -17,6 +17,12 @@
 
 class GUImanager; //forward declartion so game and gui can use each other
 
+struct Artifact {
+	UnitAnimations sprite;
+	int x;
+	int y;
+	bool collected;
+};
 
 class Game {
 public:
@@ -24,7 +30,7 @@ public:
 	~Game();
 
 	void init();
-	void update();
+	bool update();
 	void end();
 	void getGUIevent(int playerIndex, int abilityIndex);
 	void spawnPlayer(PlayerType type, int x, int y);
@@ -38,8 +44,11 @@ public:
 	OrthogonalLineOfSight* pLoS = nullptr;
 	lvlManager* pLvlMng = nullptr;
 	UnitManager* pUnitMng = nullptr;
+	GameState state;
+	sf::Sprite cursor;
 	
 private: 
+
 	enum class InputState {normal, WaitingForActionInput};
 
 	int activeP = 0;
@@ -49,8 +58,7 @@ private:
 	sf::Sprite terrain;
 	sf::Texture cursorRegular;
 	sf::Texture cursorAttack;
-	sf::Sprite cursor;
-
+	
 	SoundManager* pSoundMng = nullptr;
 	TextureManager* pTexMng = nullptr;
 	UIManager* pUiMng = nullptr;
@@ -61,15 +69,18 @@ private:
 	AnimationManager* pAnimationMng = nullptr;
 	AIFactory aiFactory = {};
 
-	GameState state;
 	InputState inputState = InputState::normal;
 
-	std::vector<Unit*>& playerVector = std::vector<Unit*>();
-	
+	std::vector<Unit*> playerVector{};
+	std::vector<std::shared_ptr<Player>> pCharacters{};
+	std::vector<Artifact> artifacts{};
+
 	std::tuple<bool, std::string> updateActionManager(ActionManagerInput inputEvent);
 	
-	std::vector<std::shared_ptr<Player>> pCharacters{};
-
 	std::vector<Unit*> pathFindFuncPtr(Unit* unit);
+
+	std::vector<DrawableUnit> getUnitsForDraw();
+	
+	void spawnArtifacts();
 
 };

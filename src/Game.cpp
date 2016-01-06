@@ -58,11 +58,11 @@ void Game::init() {
 	spawnPlayer(PlayerType::armyweirdo, -100, -100);
 
 	pLvlMng->genMap(pTexMng, pUnitMng);
-
-	pLvlMng->genDrawable(&terrain);
+	pLvlMng->genDrawable(pTexMng,&terrain);
 	pUiMng->setTerrain(terrain);
 	
 	pLoS = new OrthogonalLineOfSight();
+	pLoS->subsampleMap(&(pLvlMng->map));
 
 	gameFont = new sf::Font();
 	if (!gameFont->loadFromFile("Menlo-Regular.ttf"))
@@ -81,6 +81,7 @@ void Game::init() {
 
 	state = GameState::exploration;
 
+	spawnArtifacts();
 }
 
 Game::~Game() {
@@ -104,10 +105,17 @@ std::tuple<bool, std::string> Game::updateActionManager(ActionManagerInput input
 	
 	currentCombat->updateListOfUnits();
 
-	// TODO: return false if the player has made an invalid selection
-
 	if (events[0].type == CombatEventType::NotValid)
 		return std::tuple<bool, std::string>{false, events[0].message};
+
+	for (auto& ev : events) {
+		if (ev.type == CombatEventType::UnitDied && ev.affected->type == UnitType::player) { // This is to stop it from crashing when a player dies, it is not the correct unit in order
+			activeP = 0;
+			pGuiMng->enableActionMenu(ActionMenuEnabled::player0);
+			pLvlMng->setOccupied(ev.affected->x, ev.affected->x, false);
+
+		}
+	}
 
 	pGuiMng->handleCombatEvents(events, playerVector);
 
@@ -125,7 +133,40 @@ void Game::getGUIevent(int playerIndex, int abilityIndex) {
 	cursor.setTexture(cursorAttack);
 }
 
+void Game::spawnArtifacts() {
+	
+		for (int x = 20; x < 30; x++) {
 
+			for (int y = 0; y < 30; y++) {
+
+				if (rand() % 100 < 20) {
+
+					if (pLvlMng->map[x][y].accessible && !pLvlMng->map[x][y].occupied) {
+						artifacts.push_back({ UnitAnimations{pTexMng->textureTable["artifact"], true}, x, y });
+						return;
+					}
+				}
+			}
+		}
+	
+	//artifacts.push_back({ pTexMng->textureTable["PenglingWalkRight"], pCharacters[0]->x + 3, pCharacters[0]->y, false });
+
+}
+
+std::vector<DrawableUnit> Game::getUnitsForDraw() {
+
+	auto drawUnits = pUnitMng->getUnits();
+
+	if (state == GameState::exploration) {
+	
+		for (auto a : artifacts) {
+			if (!a.collected)
+				drawUnits.push_back({ (float)a.x, (float)a.y, a.sprite.sprite });
+		}
+	}
+
+	return drawUnits;
+}
 
 void Game::spawnPlayer(PlayerType type, int x, int y) {
 
@@ -133,55 +174,26 @@ void Game::spawnPlayer(PlayerType type, int x, int y) {
 	std::vector<ActionEvent*> playerActions{};
 	UnitAnimations* playerAnimations;
 
-	/*std::function<Modifier(int)> func = [&](int ap) {
-		std::cout << "generated with " << ap << "% chance." << std::endl;
-		std::function<void(float&)> func = [&](float& num) {
-			std::cout << "attacked, " << ap << "% chance." << std::endl;
-			if (rand() % 100 + 1 < ap) {
-				num = 0;
-				std::cout << "MISSED, " << ap << "% chance." << std::endl;
-			}
-		};
-		float dmg = 25;
-		func(dmg);
-		Modifier mod = { ModifierType::HPLoss, 1, func };
-		return mod;
-	};
-
-
-	/*std::function<void(float&)> func = [&](float& num) {
-		if (rand() % 100 + 1 < 33) {
-			num = 0;
-			std::cout << "MISSED LOL" << std::endl;
-		}
-	};
-	Modifier mod = { ModifierType::HPLoss, 1, func };*/
-
 	switch (type) {
 	case PlayerType::armyfighter:
 		playerActions = {
-			new AttackActionEvent("Q. Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5, 5, "plasma"),
-			new PommelStrikeEvent("W. Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,1, 6, 3, 5, "pommelstrike"),
-			//new ActionEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
-			//new BuffEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0,mod,"defensive"),
-			new TurnEndingBuffEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0,new TurnEndingBuff(),"defensive"),
+			new AttackActionEvent("Q. Shoot (Plasma Rifle)", "Use your plasma rifle to shoot an enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5, 5, "plasma"),
+			new PommelStrikeEvent("W. Pommel Strike", "Slows your enemy, damaging and costing him a small amount of AP. Has a 17% chance to remove more AP.",pActionMng,1, 6, 3, 5, "pommelstrike"),
+			new TurnEndingBuffEvent("E. Active Camo", "Activate your stealth camouflage. This uses all of your AP. For each spent AP point you gain 1% evasion (enemies may miss their attacks.)", pActionMng, 0 ,0,new TurnEndingBuff(),"defensive"),
 			new MoveActionEvent("R. Move", "Move to a specific position.",pActionMng)
 		};
 		playerAnimations = new UnitAnimations(pTexMng->textureTable["coolarmymove"]);
 		break;
 	case PlayerType::armyweirdo:
 		playerActions = {
-			new AttackActionEvent("Q. Shoot (Plasma Rifle)", "Use your plasma rifle to shoot your enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5, 5, "plasma"),
-			new PommelStrikeEvent("W. Pommel Strike", "Hit an enemy with the stock of your rifle. Does much less damage, but has a chance to stun on hit.",pActionMng,1, 6, 3, 5, "pommelstrike"),
-			//new ActionEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0),
-			//new BuffEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0,mod,"defensive"),
-			new TurnEndingBuffEvent("E. Active Camo", "Activate your stealth camouflage. Enemies have an increased chance to miss until you move.", pActionMng, 0 ,0,new TurnEndingBuff(),"defensive"),
+			new AttackActionEvent("Q. Shoot (Plasma Rifle)", "Use your plasma rifle to shoot an enemy. Has a chance to do extra burn damage on hit.\n\nRange: 3\tCost: 5\tDamage: 5",pActionMng, 3, 5, 5, "plasma"),
+			new PommelStrikeEvent("W. Pommel Strike", "Slows your enemy, damaging and costing him a small amount of AP. Has a 17% chance to remove more AP.",pActionMng,1, 6, 3, 5, "pommelstrike"),
+			new TurnEndingBuffEvent("E. Active Camo", "Activate your stealth camouflage. This uses all of your AP. For each spent AP point you gain 1% evasion (enemies may miss their attacks.)", pActionMng, 0 ,0,new TurnEndingBuff(),"defensive"),
 			new MoveActionEvent("R. Move", "Move to a specific position.",pActionMng)
 		};
 		playerAnimations = new UnitAnimations(pTexMng->textureTable["coolarmymove2"]);
 	}
-
-
+	
 	pCharacters.push_back(std::make_shared<Player>(playerAnimations, UnitType::player, type, playerActions, 25, 25, x, y));
 
 	pUnitMng->unitList.emplace(pUnitMng->unitList.begin(), pCharacters.back().get());
@@ -198,7 +210,11 @@ std::vector<Unit*> Game::pathFindFuncPtr(Unit* unit) {
 	return pLoS->getVisibleUnits(pLvlMng, pUnitMng, unit);
 }
 
-void Game::update() {
+bool Game::update() {
+
+	if (playerVector.size() == 0)
+		return pGuiMng->enterGameOverScreen();
+		
 	int mousex, mousey = 0;
 
 	std::vector<Unit*> visibleUnits;
@@ -224,6 +240,12 @@ void Game::update() {
 		return this->pLoS->getVisibleUnits(this->pLvlMng, pUnitMng, unit);
 	};
 
+	auto distance = [](sf::Vector2i lhv, sf::Vector2i rhv) {
+		int xDistance = abs(lhv.x - rhv.x);
+		int yDistance = abs(lhv.y - rhv.y);
+		return (xDistance + yDistance);
+	};
+
 
 	// Main Game Loop
 	while (window.isOpen())
@@ -237,7 +259,22 @@ void Game::update() {
 
 				pGuiMng->updateCombatQueue(*currentCombat);
 				currentCombat->updateListOfUnits();
+
+				//---------------------This block fixes the game crashing after both player characters died ---------------
+
+				bool playerLives = false;
+				for (int i = 0; i < currentCombat->unitsInCombat.size(); i++) {
+					if (currentCombat->unitsInCombat[i]->type == player)
+						playerLives = true;
+				}
+
+				if (playerLives == false) {
+					state = GameState::exploration;
+					continue;
+				}
 				
+				//----------------------------------------------------------------------------------------------------------
+
 				Unit* npc = currentCombat->getFirstUnit();
 				
 				//for (int i = 0; i < pCharacters.size(); i++) {
@@ -248,10 +285,14 @@ void Game::update() {
 					pGuiMng->handleCombatEvents(currentCombat->endTurn(),playerVector);
 					continue;
 				}
-				if (playerVector.size() > 0) {	//checks and removes the players in playerVector since this is not done and the other functions cannot access it
+				if (playerVector.size() > 0) {	//checks and removes the players in playerVector since this is not done before and the other functions cannot access it
 					for (int i = 0; i < playerVector.size(); i++) {
-						if (playerVector[i]->currHP <= 0)
+						if (playerVector[i]->currHP <= 0) {
+
+							pLvlMng->setOccupied(playerVector[i]->x, playerVector[i]->y, false);
+
 							playerVector.erase(playerVector.begin() + i, playerVector.begin() + i + 1);
+						}
 					}
 				}
 
@@ -291,8 +332,10 @@ void Game::update() {
 
 				if (inputState == InputState::normal) {
 
-					if (event.type == sf::Event::Closed)//|| sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+					if (event.type == sf::Event::Closed) {//|| sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
 						window.close();
+						return false;
+					}
 
 					if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space)
 						if (currentCombat != nullptr) currentCombat->listUnits();
@@ -333,11 +376,36 @@ void Game::update() {
 
 						if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Button::Right)
 						{
+							bool willCollect = false;
+							Artifact* toBeCollected = nullptr;
+
 							int xPos = sf::Mouse::getPosition(window).x - pUiMng->getX();
 							int yPos = sf::Mouse::getPosition(window).y - pUiMng->getY();
 
+							int worldX = xPos / 128;
+							int worldY = yPos / 128;
+
 							oldX = pCharacters[activeP]->x;
 							oldY = pCharacters[activeP]->y;
+
+							for (auto& art : artifacts) {
+
+								if (!art.collected) {
+
+									if (art.x == worldX && art.y == worldY) {
+
+										if (distance({ art.x, art.y }, { oldX, oldY }) == 1) {
+
+											pGuiMng->displayMessage("Artifact collected!", sf::Color{ 80,255,80,255 });
+											art.collected = true;
+										}
+										else {
+											toBeCollected = &art;
+											willCollect = true;
+										}
+									}
+								}
+							}
 
 							// Set lookForUnits true to discover units along the path 
 							path = pUnitMng->moveUnit(xPos, yPos, pCharacters[activeP].get(), pLoS, true);
@@ -351,6 +419,11 @@ void Game::update() {
 								pGuiMng->updatePlayerPositionMap(oldX, oldY, pCharacters[activeP]->x, pCharacters[activeP]->y);
 								
 								visibleUnits = pLoS->getVisibleUnits(pLvlMng, pUnitMng, pCharacters[activeP].get());
+
+								if (willCollect) {
+									pGuiMng->displayMessage("Artifact collected!", sf::Color{ 80,255,80,255 });
+									toBeCollected->collected = true;
+								}
 							}
 						}
 					}
@@ -376,6 +449,7 @@ void Game::update() {
 						int yPos = sf::Mouse::getPosition(window).y - pUiMng->getY();
 						//click pos are screen space coordinates
 
+						// This causes crashes after a player dies, prob because of incorrect indexing
 						auto wasValidAction = updateActionManager(ActionManagerInput(userActionInput->playerIndex, userActionInput->actionIndex, xPos, yPos));
 
 						// If this occurs the player either selected an Action that is not in range or costs more AP than he has
@@ -393,23 +467,10 @@ void Game::update() {
 
 						//Update the GUI with player ap replenishments, without popups
 						if (actionTookPlace) {
-							//auto gains = currentCombat->replenishUnitAP();
-							//std::vector<CombatEvent> apEvents{};
-							//for (auto gainEv : gains) {
-
-							//	CombatEvent e{ std::get<1>(gainEv), CombatEventType::AP };
-
-							//	// Since the ActionManager returns loses as positive values I implemented the GUI to asume updates as values
-							//	// So for displaying gains we need to currently send the negative value (gui adds --2 for example)
-							//	e.setAPChange(-std::get<0>(gainEv));
-
-							//	apEvents.push_back(e);
-							//}
-
+							
 							currentCombat->updateListOfUnits();
 							//currentCombat->cycleUnitModifiers(); // A turn passed -> reduce duration of mods by 1
 
-						//pGuiMng->handleCombatEvents(apEvents, playerVector, false);
 						}
 					}
 				}
@@ -452,6 +513,8 @@ void Game::update() {
 
 						pAnimationMng->registerMovement(playerVector[i]->sprite, new DrawableUnit{ (float)playerVector[0]->x, (float)playerVector[0]->y, playerVector[i]->sprite->sprite }, path, 0.5);
 						visibleUnits.push_back(playerVector[i]);
+
+						pLvlMng->setOccupied(playerVector[i]->x, playerVector[i]->y, true);
 					}
 
 					state = GameState::combat;
@@ -473,6 +536,7 @@ void Game::update() {
 						//pAnimationMng->registerMovement(playerVector[i]->sprite, new DrawableUnit{ (float)playerVector[i]->x, (float)playerVector[i]->y, playerVector[i]->sprite->sprite }, path, 0.5);
 						pGuiMng->handleCombatEvents(currentCombat->endTurn(), playerVector);
 						pLvlMng->setOccupied(playerVector[i]->x, playerVector[i]->y, false);
+
 						playerVector[i]->x = -100;
 						playerVector[i]->y = -100;
 					}
@@ -542,7 +606,7 @@ void Game::update() {
 		
 		pAnimationMng->update(frameTime);
 		pUnitMng->update(frameTime);
-		pUiMng->setUnits(pUnitMng->getUnits());
+		pUiMng->setUnits(getUnitsForDraw());
 		pUiMng->setItems(pAnimationMng->getItems());
 		pUiMng->setAnimations(pAnimationMng->getAnimations());
 		pUiMng->setMovement(pAnimationMng->getMovement());
@@ -550,9 +614,14 @@ void Game::update() {
 		pGuiMng->draw();
 		window.draw(cursor);
 		window.display();
+
+		if (playerVector.size() == 0)
+			pGuiMng->enterGameOverScreen();
+
 	}
 }
 
-void Game::end() {
 
+void Game::end() {
+	window.close();
 }

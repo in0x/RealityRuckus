@@ -2,8 +2,14 @@
 #include "Game.h"
 
 int main() {
-	Game game;
-	game.init();
-	game.update();
+	
+	bool restart = true;
+
+	while (restart) {
+		Game game;
+		game.init();
+		restart = game.update();
+	}
+
 	return 0;
 }

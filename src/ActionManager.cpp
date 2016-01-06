@@ -105,6 +105,7 @@ std::vector<CombatEvent> ActionManager::damageUnit(Unit * unit, int x, int y, fl
 		currentCombat->updateListOfUnits();
 		CombatEvent ce = { damagedUnit, CombatEventType::HP };
 		ce.setHPChange(hp);
+
 		events.push_back(ce);
 
 		float mod_cost = cost;

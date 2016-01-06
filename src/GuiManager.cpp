@@ -25,6 +25,103 @@ GUImanager::GUImanager(int screenWidth, int screenHeight, sf::RenderWindow* wind
 	pGameObject = gameObjectPtr;
 }
 
+bool GUImanager::enterGameOverScreen() {
+
+	bool restartFlag = false;
+
+	gui = std::make_shared<tgui::Gui>(*window);
+	gui->setFont(font);
+
+	sf::Texture bg;
+	bg.loadFromImage(window->capture());
+
+	sf::Sprite spr{ bg };
+
+	auto screenWide = std::make_shared<tgui::Panel>();
+	screenWide->setSize(pGameObject->WINDOW_WIDTH, pGameObject->WINDOW_HEIGHT);
+	screenWide->setBackgroundColor(sf::Color{ 0,0,0,120 });
+	screenWide->hide();
+
+
+	auto title = std::make_shared<tgui::Label>();
+	title->setText("You died.");
+	title->setTextSize(40);
+	title->getRenderer()->setTextColor(sf::Color::White);
+	title->getRenderer()->setBackgroundColor(sf::Color::Transparent);
+	title->getRenderer()->setBorderColor(sf::Color::Transparent);
+	auto dim = title->getSize();
+	title->setPosition(pGameObject->WINDOW_WIDTH / 2 - (dim.x /2), pGameObject->WINDOW_HEIGHT / 2);
+	title->hide();
+
+
+
+	auto restart = std::make_shared<tgui::Button>();
+	restart->setText("Restart");
+	restart->setTextSize(50);
+
+	restart->connect("clicked", [](Game* game, bool* flag) {*flag = true; game->end();}, pGameObject, &restartFlag);
+	restart->connect("MouseEntered", [restart]() {restart->getRenderer()->setTextColor(sf::Color{ 255,255,255,255 });});
+	restart->connect("MouseLeft", [restart]() {restart->getRenderer()->setTextColor(sf::Color{ 255,255,255,100 });});
+
+	restart->getRenderer()->setTextColor(sf::Color{255,255,255,100});
+	restart->getRenderer()->setBackgroundColor(sf::Color::Transparent);
+	restart->getRenderer()->setBorderColor(sf::Color::Transparent);
+
+	dim = restart->getSize();
+	restart->setPosition(pGameObject->WINDOW_WIDTH / 2 - dim.x - 30, pGameObject->WINDOW_HEIGHT / 2);
+	restart->hide();
+
+	auto end = std::make_shared<tgui::Button>();
+	end->setText("End");
+	end->setTextSize(50);
+	end->getRenderer()->setTextColor(sf::Color{ 255,255,255,100 });
+	end->getRenderer()->setBackgroundColor(sf::Color::Transparent);
+
+	end->connect("clicked", [](Game* game, bool* flag) {*flag = false, game->end();}, pGameObject, &restartFlag);
+	end->connect("MouseEntered", [end]() {end->getRenderer()->setTextColor(sf::Color{ 255,255,255,255 });});
+	end->connect("MouseLeft", [end]() {end->getRenderer()->setTextColor(sf::Color{ 255,255,255,100 });});
+
+	end->getRenderer()->setBorderColor(sf::Color::Transparent);
+
+	dim = end->getSize();
+	end->setPosition(pGameObject->WINDOW_WIDTH / 2 + dim.x + 30, pGameObject->WINDOW_HEIGHT / 2);
+	end->hide();
+
+	window->clear();
+
+	gui->add(screenWide);
+	gui->add(restart);
+	gui->add(end);
+	gui->add(title);
+
+	screenWide->showWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(1000));
+	restart->showWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(1000));
+	end->showWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(1000));
+	title->showWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(1000));
+
+	while (true) {
+
+		sf::Event ev;
+		pGameObject->cursor.setPosition(static_cast<sf::Vector2f>(sf::Mouse::getPosition(*window)));
+
+		while (window->pollEvent(ev)) {
+			gui->handleEvent(ev);
+			
+			if (ev.type == sf::Event::MouseButtonReleased)
+				return restartFlag;
+		}
+
+		window->clear();
+		window->draw(spr);
+		gui->draw();
+		window->draw(pGameObject->cursor);
+		window->display();
+
+	}
+
+	return restartFlag;
+}
+
 void GUImanager::addToCleanupCollection(tgui::Panel::Ptr parent, tgui::Widget::Ptr child) {
 	std::string name;
 	parent->getWidgetName(parent, name);
@@ -78,7 +175,7 @@ void GUImanager::displayMessage(std::string message, sf::Color color = sf::Color
 	mes->getRenderer()->setBorderColor(sf::Color::Transparent);
 	mes->getRenderer()->setPadding(tgui::Borders(30.f, 30.f));
 
-	combatGUI->add(mes);
+	gui->add(mes);
 	mes->show();
 	mes->hideWithEffect(tgui::ShowAnimationType::Fade, sf::milliseconds(4000));
 }
@@ -88,11 +185,12 @@ void GUImanager::displayUnitChangeText(CombatEvent& event) {
 	std::string text = "";
 
 	if (event.type == CombatEventType::AP) {
-		text = "- " + std::to_string(event.APChange) + " AP";
+		text = std::to_string(-event.APChange) + " AP";
 	}
 
 	else if (event.type == CombatEventType::HP) {
-		text = "- " + std::to_string(event.HPChange) + " HP";
+		text = std::to_string(-event.HPChange) + " HP";
+		pos.x += 64;
 	}
 
 	tgui::Label::Ptr notif = std::make_shared<tgui::Label>();
@@ -101,7 +199,10 @@ void GUImanager::displayUnitChangeText(CombatEvent& event) {
 		notif->setFont(font);
 		notif->getRenderer()->setBorderColor(sf::Color::Transparent);
 		notif->setTextSize(30);
-		notif->getRenderer()->setTextColor(sf::Color::Red);
+		if(text[0]=='-')
+			notif->getRenderer()->setTextColor(sf::Color::Red);
+		else
+			notif->getRenderer()->setTextColor(sf::Color::Green);
 		notif->getRenderer()->setBackgroundColor(sf::Color::Transparent);
 		notif->setText(text);
 		combatGUI->add(notif);
@@ -124,20 +225,26 @@ void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vecto
 	int index = 0;
 
 	for (auto& e : events) {
-		if (e.type == 0)
+		if (e.type == CombatEventType::None)
 			continue;
 
 		index = findPlayer(playerVector, e.affected);
 
 		if (e.type == CombatEventType::UnitDied) {
+
 			std::cout << "Unit died" << std::endl;
+
 			if (e.affected->type == player) {
+				removePlayerPanel(index);
 				playerVector.erase(playerVector.begin() + index, playerVector.begin() + index + 1);
+			}
+			else {
+				removeInfoPanel(e);
 			}
 		}
 
 		if (index != -1) {
-			if (e.type == 1) {
+			if (e.type == CombatEventType::Move) {
 				updatePlayerPositionMap(e.oldX, e.oldY, e.newX, e.newY);
 			}
 
@@ -150,7 +257,6 @@ void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vecto
 			else if (e.type == CombatEventType::HP) {
 				updateHPbar(index, e.affected->currHP);
 				updateHPbar(index, e.affected->currHP, true);
-				break;
 			}
 		}
 		else {
@@ -162,6 +268,49 @@ void GUImanager::handleCombatEvents(std::vector<CombatEvent>& events, std::vecto
 		if (displayPopUps) displayUnitChangeText(e);
 	}
 }
+
+void GUImanager::removePlayerPanel(int index) {
+
+
+	//TODO: remove player profile here
+	std::string i = std::to_string(index);
+
+	std::vector<std::string> keys = { "playerProfile" , "actionMenuButton", "apBar", "hpBar", "playerProfilePicture", "apbarText", "hpbarText" };
+	
+	for (auto& key : keys) {
+		auto panel = combatGUI->get(key + i);
+		combatGUI->remove(panel);
+	}
+
+}
+
+void GUImanager::removeInfoPanel(CombatEvent& e) {
+
+	EnemyPanel* toDestroy = nullptr;
+
+	for (auto& panel : enemyInfos) {
+		
+		if (panel.unit == e.affected) {
+			toDestroy = &panel;
+			break;
+		}
+	}
+
+	if (toDestroy != nullptr) {
+		gui->remove(toDestroy->infoLabel);
+		gui->remove(toDestroy->trigger);
+
+		auto it = enemyInfos.begin();
+
+		for (it; it != enemyInfos.end(); ++it) {
+			if (it->unit == toDestroy->unit)
+				break;
+		}
+
+		enemyInfos.erase(it);
+	}
+}
+
 
 void GUImanager::lockActionMenu(std::vector<Unit*>& playerVector)
 {
@@ -185,17 +334,21 @@ void GUImanager::lockActionMenu(std::vector<Unit*>& playerVector)
 	{
 		std::string key = "actionMenuButton" + std::to_string(i);
 		tgui::Button::Ptr actionMenuButton = combatGUI->get<tgui::Button>(key);
-		if (std::find(indices.begin(), indices.end(), i) != indices.end()) {
-			// Find the item
-			actionMenuButton->enable();
-			actionMenuButton->getRenderer()->setBackgroundColor(sf::Color::Transparent);
-		}
-		else
-		{
-			actionMenuButton->disable();
-			actionMenuButton->getRenderer()->setBackgroundColor(sf::Color::White);
+
+		if (actionMenuButton != nullptr) {
+			if (std::find(indices.begin(), indices.end(), i) != indices.end()) {
+				// Find the item
+				actionMenuButton->enable();
+				actionMenuButton->getRenderer()->setBackgroundColor(sf::Color::Transparent);
+			}
+			else
+			{
+				actionMenuButton->disable();
+				actionMenuButton->getRenderer()->setBackgroundColor(sf::Color::White);
+			}
 		}
 	}
+
 	setActionMenuEnabled((ActionMenuEnabled)indices[0], combatGUI);
 
 }
@@ -297,14 +450,20 @@ void GUImanager::setActionMenuEnabled(ActionMenuEnabled menuToEnable, tgui::Pane
 
 	auto buttonWidget = parent->get("actionMenuButton" + std::to_string((int)actionMenuEnabled));
 	auto buttonPressed = dynamic_cast<tgui::Button*>(buttonWidget.get());
-	buttonPressed->enable();
-	buttonPressed->getRenderer()->setBackgroundColor(sf::Color::Transparent);
+	
+	if (buttonPressed != nullptr) {
+		buttonPressed->enable();
+		buttonPressed->getRenderer()->setBackgroundColor(sf::Color::Transparent);
+	}
 	
 	auto buttonWidgetToDisable = parent->get("actionMenuButton" + std::to_string((int)menuToEnable));
 	auto buttonPressedToDisable = dynamic_cast<tgui::Button*>(buttonWidgetToDisable.get());
-	buttonPressedToDisable->disable();
-	buttonPressedToDisable->getRenderer()->setBackgroundColor(sf::Color::Green);
-
+	
+	if (buttonPressedToDisable != nullptr) {
+		buttonPressedToDisable->disable();
+		buttonPressedToDisable->getRenderer()->setBackgroundColor(sf::Color::Green);
+	}
+	
 	if (parent == combatGUI) {
 		auto widget = parent->get("actionMenu" + std::to_string((int)actionMenuEnabled));
 		auto actionMenu = dynamic_cast<tgui::Panel*>(widget.get());
@@ -326,6 +485,13 @@ void GUImanager::setActionMenuEnabled(ActionMenuEnabled menuToEnable, tgui::Pane
 	pGameObject->setActivePlayer((int)menuToEnable);
 }
 
+void GUImanager::enableActionMenu(ActionMenuEnabled toEnable) {
+	if (pGameObject->state == GameState::exploration)
+		setActionMenuEnabled(toEnable, explorationGUI);
+	else if (pGameObject->state == GameState::combat)
+		setActionMenuEnabled(toEnable, combatGUI);
+}
+
 //Creates the sprites used in the info tabs
 void GUImanager::createProfilePicture(int playerIndex, Unit* player, sf::Vector2f profilePos, tgui::Panel::Ptr parent) {
 	const sf::Texture& img = player->sprite->getTexture();
@@ -335,7 +501,7 @@ void GUImanager::createProfilePicture(int playerIndex, Unit* player, sf::Vector2
 	playerProfilePicture->setSize(70, 70);
 	playerProfilePicture->setOpacity(0.7f);
 
-	std::string key = "playerProfilePicture" + playerIndex;
+	std::string key = "playerProfilePicture" + std::to_string(playerIndex);
 	parent->add(playerProfilePicture, key);
 	addToCleanupCollection(parent, playerProfilePicture);
 }
@@ -354,9 +520,9 @@ void GUImanager::createBar(int playerIndex, int maxVal, int currVal, sf::Vector2
 	bar->setSize(bar->getSize().x / 1.5, bar->getSize().y);
 
 	if (type == "AP")
-		bar->getRenderer()->setForegroundColor(sf::Color::Blue);
+		bar->getRenderer()->setForegroundColor(sf::Color{ 75,188,246,255 });
 	else
-		bar->getRenderer()->setForegroundColor(sf::Color::Green);
+		bar->getRenderer()->setForegroundColor(sf::Color{ 152,228,102,255 });
 
 	std::string key = "";
 	for (char c : type)
@@ -369,12 +535,19 @@ void GUImanager::createBar(int playerIndex, int maxVal, int currVal, sf::Vector2
 	auto genBarText = [&](std::string boxString, int textSize, int xOffset, int yOffset) {
 		barText->setText(boxString);
 		barText->setTextSize(textSize);
+		
 		barText->getRenderer()->setTextColor(sf::Color::White);
 		barText->getRenderer()->setBackgroundColor(sf::Color::Transparent);
 		barText->getRenderer()->setBorderColor(sf::Color::Transparent);
+		
 		barText->setSize(200, 50);
 		barText->setPosition(bar->getPosition().x + bar->getSize().x + xOffset, pos.y + yOffset);
 		barText->setFont(font);
+
+		if (type == "AP")
+			barText->setTextColor(sf::Color{ 75,188,246,255 });
+		else
+			barText->setTextColor(sf::Color{ 152,228,102,255 });
 
 		key = "";
 		for (char c : type)
@@ -413,7 +586,7 @@ void GUImanager::createPlayerProfile(int playerIndex, Unit* player, tgui::Panel:
 		playerProfile->setPosition((windowWidth)* (playerIndex / 2), (windowSize.y - (2 * windowHeight)));
 
 	playerProfile->setBackgroundColor(sf::Color::Black);
-	playerProfile->setOpacity(0.3f);
+	playerProfile->setOpacity(0.6f);
 	key = "playerProfile" + std::to_string(playerIndex);
 	parent->add(playerProfile, key);
 	addToCleanupCollection(parent, playerProfile);
@@ -500,13 +673,17 @@ void GUImanager::createMap(std::array<std::array<Tile, 30>, 30> map, std::vector
 }
 
 void GUImanager::initExplorationGUI(std::vector<Unit*> players, std::array<std::array<Tile, 30>, 30>& map) {
+	
 	int index = 0;
+	
 	std::vector<PlayerCell> playerCells;
+
 	for (auto player : players) {
 		createPlayerProfile(index, player, explorationGUI);
 		playerCells.push_back(PlayerCell(player->x, player->y, index));
 		index++;
 	}
+
 	createMap(map, playerCells, explorationGUI);
 }
 
@@ -653,7 +830,7 @@ void GUImanager::createCombatQueue(CombatState& state) {
 	title->setTextSize(28);
 	title->getRenderer()->setBorders(1);
 	title->setTextColor(sf::Color::White);
-	//title->getRenderer()->setBackgroundColor(sf::Color{ 0,0,0,80 });
+
 	title->getRenderer()->setBorderColor(sf::Color::Transparent);
 	title->setText("Combat\nOrder");
 	title->setPosition(5, 30);
@@ -672,7 +849,7 @@ void GUImanager::createCombatQueue(CombatState& state) {
 		
 		profile->setSize(panelLength, 125);
 		profile->setPosition(i*panelLength + offset, 0);
-		profile->setBackgroundColor(sf::Color{0,0,0,80});
+		profile->setBackgroundColor(sf::Color{0,0,0,0});
 
 		combatGUI->add(profile, "queueProfile" + std::to_string(i));
 
@@ -745,7 +922,7 @@ void GUImanager::updateCombatQueue(CombatState& state) {
 				auto pos = widget.picture->getPosition();
 				widget.info->setPosition(pos.x + 80, pos.y + 15);
 				tgui::Label* info = dynamic_cast<tgui::Label*>(widget.info.get());
-				info->setText(std::to_string(j+1)+info->getText().substring(1));
+				info->setText(std::to_string(j+1)+info->getText().substring(info->getText().find(".")));
 				found = true;
 				continue;
 			}

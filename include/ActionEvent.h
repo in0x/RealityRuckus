@@ -82,18 +82,22 @@ private:
 class TurnEndingBuff
 {
 public:
+
 	TurnEndingBuff()
 	{
 		savedAP = new int();
 	}
+
 	~TurnEndingBuff()
 	{
 		delete savedAP;
 	}
+
 	Modifier getModifier(int ap)
 	{
 		*savedAP = ap;
 		std::cout << "generated with " << *savedAP << "% chance." << std::endl;
+		
 		std::function<void(float&)> func = [&](float& num) {
 			std::cout << "attacked, " << *savedAP << "% chance." << std::endl;
 			if (rand() % 100 + 1 < *savedAP) {
@@ -101,8 +105,7 @@ public:
 				std::cout << "MISSED, " << *savedAP << "% chance." << std::endl;
 			}
 		};
-		float dmg = 25;
-		func(dmg);
+		
 		Modifier mod = { ModifierType::HPLoss, 1, func };
 		return mod;
 	}

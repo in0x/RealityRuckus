@@ -9,6 +9,7 @@
 lvlManager::lvlManager()
 {
 	srand(time(NULL));
+	//srand(251561);
 	unitRenderTex.create(3840, 3840);
 }
 
@@ -54,18 +55,48 @@ std::string lvlManager::buildKey(TextureManager* texMng){
 
 void lvlManager::genTiles(Block tiles, int x, int y, UnitManager* unitMng){
 	int count = 0;
+	bool room = !(tiles.x == 1 || tiles.y == 1);
+
+	if(!room)
+	for (int j = -1; j < tiles.x+1; j++) {
+		for (int i = -1; i < tiles.y+1; i++) {
+			if (!((x + j < 0 || x + j >= 30) || (y + i < 0 || y + i >= 30)))
+					if ((tiles.x == 1 && j == 0 && (i == -1 || i == tiles.y)) || (tiles.y == 1 && i == 0 && (j == -1 || j == tiles.x)))
+						placementmap[x + j][y + i] += 1;
+					else
+						if (!((j <= -1 || j >= tiles.x) && (i <= -1 || i >= tiles.y)))
+							placementmap[x + j][y + i] += 2;
+						else
+							placementmap[x + j][y + i] += 3;
+		}
+	}
+	else
+	for (int j = -2; j < tiles.x + 2; j++) {
+		for (int i = -2; i < tiles.y + 2; i++) {
+			if (!((x + j < 0 || x + j >= 30) || (y + i < 0 || y + i >= 30)))
+				if (!((j <= -1 || j >= tiles.x) && (i <= -1 || i >= tiles.y)))
+					placementmap[x + j][y + i] += 2;
+				else
+					placementmap[x + j][y + i] += 3;
+		}
+	}
 	for (int j = x; j <  x+tiles.x; j++){
 		for (int i = y; i < y+tiles.y; i++){
 			map[j][i] = tiles.tiles[count];
 			map[j][i].accessible = true;
 			count++;
 
-			if (rand() % 100 + 1 <= 5) {
-				if (rand() % 2)
-					unitMng->spawnUnit(robotdude, j, i, map[j][i].accessible);
-				else
-					unitMng->spawnUnit(robotfly, j, i, map[j][i].accessible);
-				setOccupied(j, i, true);
+			if (j > 3) {
+				if (rand() % 100 + 1 <= 7) {
+
+			/*if (j > 3) {
+				if (rand() % 100 + 1 <= 5) { */
+					if (rand() % 2)
+						unitMng->spawnUnit(robotdude, j, i);
+					else
+						unitMng->spawnUnit(robotfly, j, i);
+					setOccupied(j, i, true);
+				}
 			}
 		}
 	}
@@ -73,50 +104,169 @@ void lvlManager::genTiles(Block tiles, int x, int y, UnitManager* unitMng){
 }
 
 void lvlManager::spawnUnits(UnitManager* unitMng) {
-	srand(time(nullptr));
+	/*srand(time(nullptr));
 
-	for (int x = 0; x < 30; x++) {
-		for (int y = 0; y < 30; y++)
-			if (map[x][y].accessible)
-				if ( rand() % 1000 + 1 <= 10 ) {
+
+	struct SpawnInfo {
+		int howMany;
+		int width;
+		int height;
+	};
+
+/*	for (auto& row : map) {
+		
+		for (auto& cell : row){
+			
+			
+		}
+	}*/
+
+	for (int j = 0; j < 30; j++) {
+		for (int i = 0; i < 30; i++) {
+			if (j > 3 && map[j][i].accessible) {
+				if (rand() % 100 + 1 <= 5) {
 					if (rand() % 2)
-						unitMng->spawnUnit(robotdude, x, y, map[x][y].accessible);
+						unitMng->spawnUnit(robotdude, j, i);
 					else
-						unitMng->spawnUnit(robotfly, x, y, map[x][y].accessible);
-					setOccupied(x, y, true);
+						unitMng->spawnUnit(robotfly, j, i);
+					setOccupied(j, i, true);
 				}
+			}
+		}
 	}
-	
 			
 }
 
 void lvlManager::genMap(TextureManager* texMng, UnitManager* unitMng) {
+	std::cout << "started Mapgen" << std::endl;
+	for (int i = 0; i < 30; i++) {
+		for (int j = 0; j < 30; j++) {
+			placementmap[i][j] = -1;
+		}
+	}
+	
+
 	Block b = generateTiles(buildKey(texMng), texMng);
 	genTiles(b, 0, 15, unitMng);
-	for (int i = 0; i < 50; i++) {
+	for (int i = 0; i < 150; i++) {
 		Block b = generateTiles(buildKey(texMng), texMng);
 		sf::Vector2<int> v = findNextSpot(b.x, b.y);
 		if (v.x != -1)
 			genTiles(b, v.x, v.y, unitMng);
 	}
+
+	int tiles = 100;
+	for (int i = 0; i < 30; i++) {
+		for (int j = 0; j < 30; j++) {
+			if (map[i][j].accessible)
+				tiles--;
+		}
+	}
+	if (tiles > 0)	//less than [tiles] amount of tiles present
+	{
+		std::cout << "hey, ho, lets regenerate" << tiles << std::endl;
+		map = std::array<std::array<Tile, 30>, 30>();
+		genMap(texMng, unitMng);
+	}
+	else
+	{
+		std::cout << "spawning units" << std::endl;
+		spawnUnits(unitMng);
+	}
 }
 
-void lvlManager::genDrawable(sf::Sprite* output){
+
+void lvlManager::genDrawable(TextureManager* texMng, sf::Sprite* output){
+	std::cout << "started DrawGen" << std::endl;
 	sf::RenderTexture texture;
 	texture.create(3840, 3840);
 	for (int i = 0; i < 30; i++){
 		for (int j = 0; j < 30; j++){
 			sf::Sprite renderSprite = (map[i][j].sprite);
 			renderSprite.setPosition(i * 128, j * 128);
-			texture.draw(renderSprite);
+			
 			//CharTexture prüfen/renderen
 			/*if (map[i][j].pawn != NULL){
 				renderSprite.setTexture(*(map[i][j].pawn->sprite.getTexture()));
 				texture.draw(renderSprite);
 			}*/
 			//Leere Tiles auf inaccessible setzten und blocked textur verwenden
-			if (map[i][j].sprite.getTexture() == nullptr){
-				sf::Texture tex = sf::Texture();
+			if(map[i][j].sprite.getTexture() != nullptr)
+				texture.draw(renderSprite);
+			else{
+				//sf::RenderTexture tex;
+				//texture.create(128, 128);
+				sf::Sprite temp = sf::Sprite();
+				temp.setPosition(i * 128, j * 128);
+				temp.setTexture(texMng->textureTable["SciFiWall_4"]);
+				texture.draw(temp);
+
+				{
+					if (isAccessible(i - 1,j) && isAccessible(i, j - 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_0_0"]);
+					else if (isAccessible(i - 1, j))
+						temp.setTexture(texMng->textureTable["SciFiWall_0_2"]);
+					else if (isAccessible(i, j - 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_0_3"]);
+					else if (isAccessible(i - 1, j - 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_0_1"]);
+					texture.draw(temp);
+				}
+				{
+					if (isAccessible(i, j - 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_1"]);
+					texture.draw(temp);
+				}
+				{
+					if (isAccessible(i + 1, j) && isAccessible(i, j - 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_2_0"]);
+					else if (isAccessible(i + 1, j))
+						temp.setTexture(texMng->textureTable["SciFiWall_2_2"]);
+					else if (isAccessible(i, j - 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_2_3"]);
+					else if (isAccessible(i + 1, j - 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_2_1"]);
+					texture.draw(temp);
+				}
+				{
+					if (isAccessible(i - 1, j))
+						temp.setTexture(texMng->textureTable["SciFiWall_3"]);
+					texture.draw(temp);
+				}
+				{
+					if (isAccessible(i + 1, j))
+						temp.setTexture(texMng->textureTable["SciFiWall_5"]);
+					texture.draw(temp);
+				}
+				{
+					if (isAccessible(i - 1, j) && isAccessible(i, j + 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_6_0"]);
+					else if (isAccessible(i - 1, j))
+						temp.setTexture(texMng->textureTable["SciFiWall_6_2"]);
+					else if (isAccessible(i, j + 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_6_3"]);
+					else if (isAccessible(i - 1, j + 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_6_1"]);
+					texture.draw(temp);
+				}
+				{
+					if (isAccessible(i, j + 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_7"]);
+					texture.draw(temp);
+				}
+				{
+					if (isAccessible(i + 1, j) && isAccessible(i, j + 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_8_0"]);
+					else if (isAccessible(i + 1, j))
+						temp.setTexture(texMng->textureTable["SciFiWall_8_2"]);
+					else if (isAccessible(i, j + 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_8_3"]);
+					else if (isAccessible(i + 1, j + 1))
+						temp.setTexture(texMng->textureTable["SciFiWall_8_1"]);
+					texture.draw(temp);
+				}
+				//tex.display();
+				/*
 				int connections = 0;
 				if (j == 0 || map[i][j - 1].accessible == false)//up
 					connections += 8;
@@ -150,10 +300,10 @@ void lvlManager::genDrawable(sf::Sprite* output){
 				}
 				strcat(buffer, buffer2);
 				strcat(buffer, ".png");
-				tex.loadFromFile(buffer);
-				map[i][j].sprite.setTexture(tex);
-				renderSprite.setTexture(tex);
-				texture.draw(renderSprite);
+				tex.loadFromFile(buffer);*/
+				//map[i][j].sprite.setTexture(tex.getTexture());
+				//renderSprite.setTexture(tex.getTexture());
+				//texture.draw(renderSprite);
 			}
 		}
 	}
@@ -165,6 +315,8 @@ void lvlManager::genDrawable(sf::Sprite* output){
 	}*/
 	tex = texture.getTexture();
 	(*output).setTexture(tex);
+
+	std::cout << "done" << std::endl;
 }
 
 
@@ -220,18 +372,19 @@ void lvlManager::testTileGen(TextureManager* texMng, sf::RenderWindow* window_pt
 }
 
 bool lvlManager::isAccessible(int x, int y){
-	/*if (x < 0 || y < 0 || x >= 30 || y >= 30){
+	if (x < 0 || y < 0 || x >= 30 || y >= 30){
 		return false;
-	}*/
+	}
 	return map[x][y].accessible;
 }
 
 sf::Vector2<int> lvlManager::findNextSpot(int w, int h){
 	bool valid;
 	int x, y;
+	bool room = !(w == 1 || h == 1);
 	int tries = 0;
 	do{
-		if (tries > 50)
+		if (tries > 10000)
 			return sf::Vector2<int>(-1, -1);
 		int outAccessible = 0;
 		x = rand() % (28-w) +1;
@@ -240,7 +393,6 @@ sf::Vector2<int> lvlManager::findNextSpot(int w, int h){
 		for (int i = x - 1; i < x + w + 1; i++){
 			for (int j = y - 1; j < y + h + 1; j++){
 				if (!((i == x - 1 || i == x + w) && (j == y - 1 || j == y + h)))
-
 				if ((i < x || i >= x + w || j < y || j >= y + h)){
 					if (map[i][j].accessible == true){
 						outAccessible++;
@@ -250,8 +402,19 @@ sf::Vector2<int> lvlManager::findNextSpot(int w, int h){
 					if (map[i][j].accessible == true)
 						valid = false;
 				}
+				else
+				{
+					if (room && (placementmap[i][j] >= 1))
+						valid = false;
+					if (!room && placementmap[i][j] > 1)
+						valid = false;
+				}
 			}
 		}
+		/*for (int j = 0; j < tiles.x + 1; j++) {
+			for (int i = 0; i < tiles.y + 1; i++) {
+			}
+		}*/
 		if (outAccessible == 0 || outAccessible >= 2)
 			valid = false;
 		tries++;

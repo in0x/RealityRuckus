@@ -35,7 +35,9 @@ public:
 	void updateWindowOffset(int x, int y, int unitsInCombat);
 	void displayMessage(std::string message, sf::Color color);
 	void setActionMenuEnabled(ActionMenuEnabled, tgui::Panel::Ptr parent);
+	void enableActionMenu(ActionMenuEnabled);
 	void updateCombatQueue(CombatState& state);
+	bool enterGameOverScreen();
 
 private:
 	tgui::Panel::Ptr explorationGUI = std::make_shared<tgui::Panel>();
@@ -58,7 +60,7 @@ private:
 		sf::Vector2i originalPos;
 	};
 
-	struct QueuePanels {
+	struct QueuePanel {
 		Unit* unit;
 		tgui::Widget::Ptr profile;
 		tgui::Widget::Ptr picture;
@@ -68,7 +70,7 @@ private:
 	std::vector<tgui::Widget::Ptr> explorationWidgets {};
 	std::vector<tgui::Widget::Ptr> combatWidgets {};
 	std::vector<EnemyPanel> enemyInfos {};
-	std::vector<QueuePanels> qPanels {};
+	std::vector<QueuePanel> qPanels {};
 
 	void createPlayerProfile(int playerIndex, Unit* player, tgui::Panel::Ptr parent, bool combat = false);
 	void createMap(std::array<std::array<Tile, 30>, 30> map, std::vector<PlayerCell> players, tgui::Panel::Ptr parent);
@@ -83,4 +85,6 @@ private:
 	void updateEnemyPanelsPos(int amount);
 	void updateEnemyPanelInfo(Unit* unit);
 	void createCombatQueue(CombatState& state);
+	void removeInfoPanel(CombatEvent& e);
+	void removePlayerPanel(int index);
 };

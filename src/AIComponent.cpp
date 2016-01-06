@@ -125,9 +125,14 @@ sf::Vector2i AIUtility::findFieldToMoveTo(sf::Vector2i desired, int leeway, AIRe
 					if (util.map->map[desired.x + x][desired.y + y].accessible == true && util.map->map[desired.x + x][desired.y + y].occupied == true) {
 						if (getPath(util, { desired.x + x, desired.y + y }).size() < 40) {
 
-							auto visibUnits = util.losFunc(target);
+							auto visibleUnits = util.losFunc(target);
 
-							return{ desired.x + x, desired.y + y };
+							for (auto& unit : visibleUnits) {
+								if (target == unit)
+									return{ desired.x + x, desired.y + y };
+							}
+
+							//return{ desired.x + x, desired.y + y };
 						}
 					}
 				}
@@ -259,6 +264,9 @@ Command MeleeAttack::evaluate(AIComponent& component) {
 	// Sorted by distance, ascending
 	auto enemies = AIUtility::getUnitsDistance(component.util);
 
+	if (enemies.size() == 0)
+		return actions;
+
 	// Attack the first unit in range
 	if (enemies[0].distance <= range) {
 
@@ -282,6 +290,12 @@ Command MeleeAttack::evaluate(AIComponent& component) {
 	//Otherwise look for one that can be attacked with a move
 	else {
 		for (auto& other : enemies) {
+
+			if (other.distance == 1) {
+				actions = { { CommandType::Physical },{ { target->x, target->y } } };
+				return actions;
+			}
+
 			//auto path = AIUtility::getPath(util, { other.unit->x, other.unit->y });
 
 			auto vec = AIUtility::getRandMoveDir(sf::Vector2i{ other.unit->x, other.unit->y }, range / 2);;
@@ -330,6 +344,9 @@ Command CleaveAttack::evaluate(AIComponent& component) {
 	// Sorted by distance, ascending
 	auto enemies = AIUtility::getUnitsDistance(component.util);
 
+	if (enemies.size() == 0)
+		return actions;
+
 	if (enemies[0].distance <= range) {
 
 		target = enemies[0].unit;
@@ -337,18 +354,24 @@ Command CleaveAttack::evaluate(AIComponent& component) {
 		auto loc = AIUtility::findFieldToMoveTo(vec, range, util, target);
 
 		if (range == 1) {
-			actions = { { CommandType::Physical },{ { target->x, target->y } } };
+			actions = { { CommandType::AggSpecial },{ { target->x, target->y } } };
 			return actions;
 		}
 
 		if (loc.x != -1) {
 			moveTo = loc;
-			actions = { { CommandType::Move, CommandType::Physical },{ moveTo,{ target->x, target->y } } };
+			actions = { { CommandType::Move, CommandType::AggSpecial },{ moveTo,{ target->x, target->y } } };
 			return actions;
 		}
 	}
 
 	for (auto& other : enemies) {
+
+		if (other.distance == 1) {
+			actions = { { CommandType::AggSpecial },{ { target->x, target->y } } };
+			return actions;
+		}
+
 		//auto path = AIUtility::getPath(util, { other.unit->x, other.unit->y });
 		target = other.unit;	//needs a target here in order not to crash
 
@@ -367,14 +390,14 @@ Command CleaveAttack::evaluate(AIComponent& component) {
 
 				if (target == nullptr) { // If we haven't found a suitable target yet, select this one
 					target = other.unit;
-					actions = { { CommandType::Move, CommandType::Physical },{ moveTo,{ target->x, target->y } } };
+					actions = { { CommandType::Move, CommandType::AggSpecial },{ moveTo,{ target->x, target->y } } };
 				}
 
-				if (other.unit->currHP <= damage) { // We can kill this unit, so we go for it first
+				//if (other.unit->currHP <= damage) { // We can kill this unit, so we go for it first
 					target = other.unit;
-					actions = { { CommandType::Move, CommandType::Physical },{ moveTo,{ target->x, target->y } } };
+					actions = { { CommandType::Move, CommandType::AggSpecial },{ moveTo,{ target->x, target->y } } };
 					return actions;
-				}
+				//}
 
 			}
 
@@ -458,6 +481,9 @@ Command ApplyAPDebuff::evaluate(AIComponent& component) {
 
 	// Sorted by distance, ascending
 	auto enemies = AIUtility::getUnitsDistance(component.util);
+
+	if (enemies.size() == 0)
+		return actions;
 
 	// If a unit is already in range, apply the debuff to it
 	if (enemies[0].distance <= range) {

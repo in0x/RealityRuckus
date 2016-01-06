@@ -40,9 +40,7 @@ UnitManager::UnitManager(lvlManager* lvlMng, TextureManager* texMng, SoundManage
 	fileStream.close();
 }
 
-Unit* UnitManager::spawnUnit(UnitType u, int x, int y, bool isAccessible) {
-	if (!isAccessible) 
-	 	return false;
+Unit* UnitManager::spawnUnit(UnitType u, int x, int y) {
 
 	Unit* unit  = new Unit();
 
@@ -95,8 +93,7 @@ std::vector<DrawableUnit> UnitManager::getUnits() {
 	std::vector<DrawableUnit> dUnits;
 	
 	for (auto u : unitList) {
-		AnimatedSprite* sprtPtr = u->sprite->sprite;
-		dUnits.push_back(DrawableUnit{ (float)u->x, (float)u->y, sprtPtr });
+		dUnits.push_back(DrawableUnit{ (float)u->x, (float)u->y, u->sprite->sprite });
 	}
 
     return dUnits;
@@ -129,25 +126,41 @@ std::vector<Node> UnitManager::moveUnit(int x, int y, Unit* unit, OrthogonalLine
 
 		std::vector<Node> newPath{};
 
-		for (auto& node : path) {
-
-			newPath.push_back(node);
+		for (int i = 0; i < path.size(); i++) {
 			
-			unit->x = node.x;
-			unit->y = node.y;
+			newPath.push_back(path[i]);
+
+			lvl->moveUnitInMap(path[i].x, path[i].y, unit);
+
+			unit->x = path[i].x;
+			unit->y = path[i].y;
 
 			if (los->getVisibleUnits(lvl, this, unit).size() > 1) {
-				
+			
+				for (int _i = i; i < path.size(); i++) {
+					newPath.push_back(path[i]);
+				}
+
 				end = newPath.back();
 
-				return newPath;
+				lvl->moveUnitInMap(end.x, end.y, unit);
 
+				unit->x = end.x;
+				unit->y = end.y;
+
+				return newPath;
 			}
+
 		}
 	
 	}
 	
 	lvl->moveUnitInMap(end.x, end.y, unit);
+	//lvl->map[unit->x][unit->y].accessible = true;
+	//lvl->map[unit->x][unit->y].occupied = false;
+
+	//lvl->map[end.x][end.y].accessible = false;
+	//lvl->map[end.x][end.y].accessible = true;
 
 	unit->x = end.x;
 	unit->y = end.y;
@@ -199,7 +212,8 @@ void UnitManager::setPlayer(Unit * p)
 
 bool UnitManager::isDead(int index) {
 	if (unitList[index]->currHP <= 0) {
-		lvl->setAccessTile(unitList[index]->x, unitList[index]->y, true);
+		lvl->setOccupied(unitList[index]->x, unitList[index]->y, false);
+		//lvl->setAccessTile(unitList[index]->x, unitList[index]->y, true);
 		unitList.erase(unitList.begin() + index, unitList.begin() + index + 1);
 		die.play();
 		return true;

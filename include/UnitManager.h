@@ -15,14 +15,16 @@ class lvlManager;
 class OrthogonalLineOfSight;
 class AIFactory;
 
+
+
 class UnitManager {
 public:
 	UnitManager(lvlManager*, TextureManager*, SoundManager*, AIFactory* aiFactory);
 	~UnitManager();
 
 	std::vector<DrawableUnit> getUnits();
-	std::vector<Unit*> unitList;
-	 
+	std::vector<Unit*> unitList {};
+	
 	//Player* player;
 	aStarSearch pathFinder;
 	ActionManager* pActionMng;
@@ -32,13 +34,14 @@ public:
 
 	std::vector<Node> moveUnit(int x, int y, Unit* unit, OrthogonalLineOfSight* los = nullptr, bool lookForUnits = false);
 
-	Unit* spawnUnit(UnitType, int, int, bool);
+	Unit* spawnUnit(UnitType, int, int);
 
 	bool isDead(int);
 	void update(sf::Time time);
 	bool damageUnit(Unit * unit, float hp);
 	void setPlayer(Unit* p);
 	void removeAP(Unit* unit, int ap);
+	void spawnArtifact(int x, int y);
 	std::string getRandomName();
 
 private:

@@ -12,8 +12,13 @@ class OrthogonalLineOfSight {
 public:
 	std::vector<Unit*> getVisibleUnits(lvlManager*, UnitManager*, Unit* unit);
 
+	void subsampleMap(std::array<std::array<Tile, 30>, 30>* map);
+
 private:
-	std::vector<Tile> findLoSHFirst(int startX, int startY, int endX, int endY, std::array<std::array<Tile, 30>, 30>* map);
-	std::vector<Tile> findLoSVFirst(int startX, int startY, int endX, int endY, std::array<std::array<Tile, 30>, 30>* map);
-	bool checkVisibility(std::vector<Tile>);
+	std::vector<bool> findLoSHFirst(int startX, int startY, int endX, int endY, std::array<std::array<Tile, 30>, 30>* map, std::array<std::array<bool, 60>, 60>* subMap);
+	std::vector<bool> findLoSVFirst(int startX, int startY, int endX, int endY, std::array<std::array<Tile, 30>, 30>* map, std::array<std::array<bool, 60>, 60>* subMap);
+	
+	bool checkVisibility(std::vector<bool>);
+	
+	std::array<std::array<bool, 60>, 60> subMap;
 };

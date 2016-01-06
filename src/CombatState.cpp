@@ -44,7 +44,7 @@ std::vector<CombatEvent> CombatState::endTurn()
 	for (auto& unit : unitsInCombat)
 	{
 		CombatEvent ev = CombatEvent(unit, CombatEventType::AP);
-		ev.setAPChange(unit->replenishAP());
+		ev.setAPChange(-unit->replenishAP());
 		events.push_back(ev);
 	}
 	cycleUnitModifiers();

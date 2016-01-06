@@ -17,7 +17,8 @@ class UnitManager;
 class lvlManager
 {
 public:
-	std::array<std::array<Tile, 30>, 30> map; 
+	std::array<std::array<Tile, 30>, 30> map;
+	std::array<std::array<int, 30>, 30> placementmap;
 	std::string buildKey(TextureManager*);
 
 	sf::Sprite output;
@@ -34,7 +35,7 @@ public:
 
 	void genMap(TextureManager*, UnitManager* unitMng);
 	void genTiles(Block, int, int, UnitManager* unitMng);
-	void genDrawable(sf::Sprite*);
+	void genDrawable(TextureManager* texMng, sf::Sprite*);
 	void testTileGen(TextureManager*, sf::RenderWindow*);
 	void setAccessTile(int x, int y, bool accessability);
 	void setOccupied(int x, int y, bool occupied);

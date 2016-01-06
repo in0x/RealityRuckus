@@ -9,8 +9,8 @@ class UnitAnimations : public sf::Drawable, public sf::Transformable
 public:
 	UnitAnimations();
 	~UnitAnimations();
+	UnitAnimations(sf::Texture & tex, bool isStatic=false);
 	//UnitAnimations(AnimatedSprite anim);
-	UnitAnimations(sf::Texture& anim);
 	void setAnimation(std::string key, Animation anim);
     void update(sf::Time deltaTime);
     void play(std::string key);

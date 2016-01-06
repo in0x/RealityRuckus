@@ -4,5 +4,5 @@ enum UnitType {
 	turtle,
 	player,
 	robotdude,
-	robotfly,
+	robotfly
 };
